@@ -1,0 +1,50 @@
+---
+builds:
+  - env:
+      - CGO_ENABLED=0
+    main: ./cli/
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    ldflags:
+      - '-s -w'
+      - -X github.com/drewstinnett/sourceseedy/cli/cmd.date={{ .CommitTimestamp }}
+      - -X github.com/drewstinnett/sourceseedy/cli/cmd.version={{ .Tag }}
+      - -X github.com/drewstinnett/sourceseedy/cli/cmd.commit={{ .ShortCommit }}
+    flags:
+      - -trimpath
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: darwin
+        goarch: '386'
+    binary: 'sourceseedy'
+archives:
+  - format: tar.gz
+    name_template: 'sourceseedy-{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    replacements:
+      darwin: macOS
+checksum:
+  name_template: 'sourceseedy-{{ .Version }}_SHA256SUMS'
+  algorithm: sha256
+snapshot:
+  name_template: "{{ .Tag }}-snapshot"
+changelog:
+  skip: true
+
+brews:
+  - name: 'sourceseedy'
+    tap:
+      owner: drewstinnett
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    description: "Easily switch between source directories"
+    homepage: "https://github.com/drewstinnett/sourceseedy"
+    license: BSD-2-Clause
+    caveats: |
+      Add the following in your ~/.zshrc or ~/.profile for faster typin':
+
+        alias scd="#{opt_bin}/sourceseedy"
