@@ -1,4 +1,4 @@
-alias scd() {
-  target=$(go run ./cli/main.go fzf)
+scd() {
+  target=$(/usr/local/bin/sourceseedy fzf)
   cd $target
 }

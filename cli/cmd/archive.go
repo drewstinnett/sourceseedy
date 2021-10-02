@@ -22,57 +22,59 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"fmt"
+	"os"
 	"path"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/drewstinnett/sourceseedy/sourceseedy"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
-// fzfCmd represents the fzf command
-var fzfCmd = &cobra.Command{
-	Use:   "fzf",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+// archiveCmd represents the archive command
+var archiveCmd = &cobra.Command{
+	Use:   "archive [directory]",
+	Short: "Compress and copy a repo in to the 'archive' directory",
+	Long: `Use this if you are gonna make a big scary change, and wanna make sure you have
+a copy of everything stashed in ti ${base}/archived. If no directory is specified, an fzf
+chooser will pop up`,
+	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		thing, err := sourceseedy.FzfProjects(base)
-		cobra.CheckErr(err)
-		fmt.Println(path.Join(base, thing))
-
-		// r := strings.NewReader("")
-		/*
-			r := new(bytes.Buffer)
-			var thing string
-			for _, h := range hs {
-				projects, err := h.ListProjects()
-				cobra.CheckErr(err)
-				for _, d := range projects {
-					line := fmt.Sprintf(path.Join(h.Name, d) + "\n")
-					r.Write([]byte(line))
-				}
-			}
-			thing, err = sourceseedy.Fzf(r)
+		var project, repo string
+		var err error
+		if len(args) == 0 {
+			project, err := sourceseedy.FzfProjects(base)
 			cobra.CheckErr(err)
-			fmt.Println(path.Join(base, thing))
-		*/
+			repo = path.Join(base, project)
+		} else {
+			repo, err = filepath.Abs(args[0])
+			cobra.CheckErr(err)
+			project = strings.TrimPrefix(repo, base+"/")
+		}
+
+		archiveFilename := path.Join(base, "archive", strings.ReplaceAll(project, "/", "-")+"-"+time.Now().Format("20060102150405")+".tar")
+		gzName := archiveFilename + ".gz"
+		err = sourceseedy.Tar(repo, archiveFilename)
+		cobra.CheckErr(err)
+		defer os.Remove(archiveFilename)
+		err = sourceseedy.Gzip(archiveFilename, gzName)
+		cobra.CheckErr(err)
+		log.Println("Created:", gzName)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(fzfCmd)
+	rootCmd.AddCommand(archiveCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// fzfCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// archiveCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// fzfCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// archiveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

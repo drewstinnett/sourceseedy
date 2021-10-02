@@ -1,6 +1,8 @@
 package sourceseedy
 
 import (
+	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -36,4 +38,23 @@ func Fzf(data io.Reader) (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(result.String()), nil
+}
+
+func FzfProjects(base string) (string, error) {
+	projects, err := ListAllProjectFullIDs(base)
+	if err != nil {
+		return "", err
+	}
+	r := new(bytes.Buffer)
+	var thing string
+	for _, p := range projects {
+		line := fmt.Sprintf(p + "\n")
+		r.Write([]byte(line))
+
+	}
+	thing, err = Fzf(r)
+	if err != nil {
+		return "", err
+	}
+	return thing, nil
 }
