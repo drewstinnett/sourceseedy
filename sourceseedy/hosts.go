@@ -58,3 +58,23 @@ func ListHosts(dir string) ([]Host, error) {
 	}
 	return hosts, nil
 }
+
+func (h Host) ListNamespaces() ([]Namespace, error) {
+	var result []Namespace
+	items, err := ioutil.ReadDir(h.Directory)
+	if err != nil {
+		return nil, err
+	}
+	for _, item := range items {
+		if strings.HasPrefix(item.Name(), ".") {
+			continue
+		}
+		n := Namespace{
+			Name:      item.Name(),
+			Host:      h.Name,
+			Directory: path.Join(h.Directory, item.Name()),
+		}
+		result = append(result, n)
+	}
+	return result, nil
+}

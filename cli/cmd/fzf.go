@@ -22,37 +22,66 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"bytes"
 	"fmt"
-	"log"
+	"path"
 
 	"github.com/drewstinnett/sourceseedy/sourceseedy"
 	"github.com/spf13/cobra"
 )
 
-// listCmd represents the list command
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List projects in your source directory",
+// fzfCmd represents the fzf command
+var fzfCmd = &cobra.Command{
+	Use:   "fzf",
+	Short: "A brief description of your command",
+	Long: `A longer description that spans multiple lines and likely contains examples
+and usage of using your command. For example:
+
+Cobra is a CLI library for Go that empowers applications.
+This application is a tool to generate the needed files
+to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Println("Listing source repositories in ", base)
-		items, err := sourceseedy.ListAllProjectFullIDs(base)
+		projects, err := sourceseedy.ListAllProjectFullIDs(base)
 		cobra.CheckErr(err)
-		for _, item := range items {
-			fmt.Println(item)
+		r := new(bytes.Buffer)
+		var thing string
+		for _, p := range projects {
+			line := fmt.Sprintf(p + "\n")
+			r.Write([]byte(line))
+
 		}
+		thing, err = sourceseedy.Fzf(r)
+		cobra.CheckErr(err)
+		fmt.Println(path.Join(base, thing))
+		// r := strings.NewReader("")
+		/*
+			r := new(bytes.Buffer)
+			var thing string
+			for _, h := range hs {
+				projects, err := h.ListProjects()
+				cobra.CheckErr(err)
+				for _, d := range projects {
+					line := fmt.Sprintf(path.Join(h.Name, d) + "\n")
+					r.Write([]byte(line))
+				}
+			}
+			thing, err = sourceseedy.Fzf(r)
+			cobra.CheckErr(err)
+			fmt.Println(path.Join(base, thing))
+		*/
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(fzfCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// listCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// fzfCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// fzfCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
