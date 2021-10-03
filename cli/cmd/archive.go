@@ -22,7 +22,6 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -45,9 +44,9 @@ chooser will pop up`,
 		var project, repo string
 		var err error
 		if len(args) == 0 {
-			project, err := sourceseedy.FzfProjects(base)
+			project, err = sourceseedy.FzfProjects(base)
 			cobra.CheckErr(err)
-			repo = path.Join(base, project)
+			// repo = path.Join(base, project)
 		} else {
 			repo, err = filepath.Abs(args[0])
 			cobra.CheckErr(err)
@@ -56,10 +55,7 @@ chooser will pop up`,
 
 		archiveFilename := path.Join(base, "archive", strings.ReplaceAll(project, "/", "-")+"-"+time.Now().Format("20060102150405")+".tar")
 		gzName := archiveFilename + ".gz"
-		err = sourceseedy.Tar(repo, archiveFilename)
-		cobra.CheckErr(err)
-		defer os.Remove(archiveFilename)
-		err = sourceseedy.Gzip(archiveFilename, gzName)
+		err = sourceseedy.CreateArchive(base, project, gzName)
 		cobra.CheckErr(err)
 		log.Println("Created:", gzName)
 	},
