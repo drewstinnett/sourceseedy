@@ -78,7 +78,7 @@ func fzfWithFilter(command string, input func(in io.WriteCloser)) string {
 	return string(result)
 }
 
-func StreamFzfProjects(base string) (string, error) {
+func StreamFzfProjects(base, filter string) (string, error) {
 	var namespaces []Namespace
 	hs, err := ListHosts(base)
 	if err != nil {
@@ -91,7 +91,13 @@ func StreamFzfProjects(base string) (string, error) {
 		}
 		namespaces = append(namespaces, ns...)
 	}
-	filtered := fzfWithFilter("fzf +m", func(in io.WriteCloser) {
+	var fzfCmd string
+	if filter != "" {
+		fzfCmd = fmt.Sprintf("fzf +m -q \"%v\"", filter)
+	} else {
+		fzfCmd = "fzf +m"
+	}
+	filtered := fzfWithFilter(fzfCmd, func(in io.WriteCloser) {
 		var wg sync.WaitGroup
 		for _, namespace := range namespaces {
 			wg.Add(1)

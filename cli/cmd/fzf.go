@@ -31,7 +31,7 @@ import (
 
 // fzfCmd represents the fzf command
 var fzfCmd = &cobra.Command{
-	Use:   "fzf",
+	Use:   "fzf [filter]",
 	Short: "Use Fzf to jump in to a source directory",
 	Long: `Quick method of jumping around source directories, using Fzf. Throw something
 like this in your .zshrc for easier usage:
@@ -39,11 +39,20 @@ like this in your .zshrc for easier usage:
 scd() {
   target=$(/usr/local/bin/sourceseedy fzf)
   cd $target
-}`,
+}
+
+If given a filter arg, the fzf command will pass that in as an initial string to
+match`,
+	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		thing, err := sourceseedy.StreamFzfProjects(base)
+		var thing string
+		var err error
+		if len(args) > 0 {
+			thing, err = sourceseedy.StreamFzfProjects(base, args[0])
+		} else {
+			thing, err = sourceseedy.StreamFzfProjects(base, "")
+		}
 		cobra.CheckErr(err)
-		// log.Println(thing)
 		fmt.Println(path.Join(base, thing))
 	},
 }
