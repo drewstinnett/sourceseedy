@@ -7,6 +7,9 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func Fzf(data io.Reader) (string, error) {
@@ -57,4 +60,55 @@ func FzfProjects(base string) (string, error) {
 		return "", err
 	}
 	return thing, nil
+}
+
+func fzfWithFilter(command string, input func(in io.WriteCloser)) string {
+	shell := os.Getenv("SHELL")
+	if len(shell) == 0 {
+		shell = "sh"
+	}
+	cmd := exec.Command(shell, "-c", command)
+	cmd.Stderr = os.Stderr
+	in, _ := cmd.StdinPipe()
+	go func() {
+		input(in)
+		in.Close()
+	}()
+	result, _ := cmd.Output()
+	return string(result)
+}
+
+func StreamFzfProjects(base string) (string, error) {
+	var namespaces []Namespace
+	hs, err := ListHosts(base)
+	if err != nil {
+		return "", err
+	}
+	for _, h := range hs {
+		ns, err := h.ListNamespaces()
+		if err != nil {
+			return "", err
+		}
+		namespaces = append(namespaces, ns...)
+	}
+	filtered := fzfWithFilter("fzf +m", func(in io.WriteCloser) {
+		var wg sync.WaitGroup
+		for _, namespace := range namespaces {
+			wg.Add(1)
+			go func(namespace Namespace) {
+				defer wg.Done()
+				projects, err := namespace.ListProjects()
+				if err != nil {
+					log.Warning(err)
+				}
+				for _, project := range projects {
+					fmt.Fprintln(in, project.FullID())
+					// batch = append(batch, project.FullID())
+				}
+			}(namespace)
+		}
+		wg.Wait()
+	})
+	// fmt.Println(filtered)
+	return strings.TrimSuffix(filtered, "\n"), nil
 }

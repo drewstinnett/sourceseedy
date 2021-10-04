@@ -41,8 +41,9 @@ scd() {
   cd $target
 }`,
 	Run: func(cmd *cobra.Command, args []string) {
-		thing, err := sourceseedy.FzfProjects(base)
+		thing, err := sourceseedy.StreamFzfProjects(base)
 		cobra.CheckErr(err)
+		// log.Println(thing)
 		fmt.Println(path.Join(base, thing))
 	},
 }
