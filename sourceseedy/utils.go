@@ -56,8 +56,8 @@ func ListAllProjectFullIDs(b string) ([]string, error) {
 	c := make(chan []string, len(namespaces))
 	var wg sync.WaitGroup
 	for _, namespace := range namespaces {
+		wg.Add(1)
 		go func(namespace Namespace) {
-			wg.Add(1)
 			defer wg.Done()
 			projects, err := namespace.ListProjects()
 			cobra.CheckErr(err)

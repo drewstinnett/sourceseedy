@@ -40,7 +40,8 @@ import and move it over. Use the git remote URL to decide where it should go`,
 			if !sourceseedy.IsDir(fullPpath) {
 				log.Println("Creating: ", fullPpath)
 				if !dr {
-					os.MkdirAll(fullPpath, os.ModePerm)
+					err := os.MkdirAll(fullPpath, os.ModePerm)
+					cobra.CheckErr(err)
 				}
 			}
 			fullTarget := path.Join(base, target)
