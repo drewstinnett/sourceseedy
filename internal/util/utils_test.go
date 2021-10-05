@@ -21,3 +21,17 @@ func TestGetParentPath(t *testing.T) {
 		require.Equal(t, tt.want, got)
 	}
 }
+
+func TestIsDir(t *testing.T) {
+	tests := []struct {
+		dir  string
+		want bool
+	}{
+		{"./testdata/non-exist", false},
+		{"./testdata/exists", true},
+	}
+	for _, test := range tests {
+		got := util.IsDir(test.dir)
+		require.Equal(t, test.want, got)
+	}
+}
