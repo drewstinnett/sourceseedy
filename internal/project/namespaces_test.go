@@ -1,6 +1,7 @@
 package project_test
 
 import (
+	"path"
 	"testing"
 
 	"github.com/drewstinnett/sourceseedy/internal/project"
@@ -9,9 +10,9 @@ import (
 
 func TestListProjectsFromNamespace(t *testing.T) {
 	n := project.Namespace{
-		Name:      "someowner",
+		Name:      "somenamespace",
 		Host:      "fake.com",
-		Directory: "./testdata/fake.com/someowner",
+		Directory: path.Join(testBase, "fake.com", "somenamespace"),
 	}
 	ps, err := n.ListProjects()
 	require.NoError(t, err)

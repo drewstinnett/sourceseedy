@@ -1,7 +1,6 @@
 package project_test
 
 import (
-	"os"
 	"path"
 	"testing"
 
@@ -10,7 +9,7 @@ import (
 )
 
 func TestListHosts(t *testing.T) {
-	hosts, err := project.ListHosts("./testdata")
+	hosts, err := project.ListHosts(testBase)
 	require.NoError(t, err)
 
 	// Make sure we got hosts back
@@ -21,12 +20,10 @@ func TestListHosts(t *testing.T) {
 }
 
 func TestListProjects(t *testing.T) {
-	base := BuildTestStruct()
-	defer os.RemoveAll(base)
 	h := project.Host{
 		Name:      "fake.com",
 		Flavor:    "github",
-		Directory: path.Join(base, "fake.com"),
+		Directory: path.Join(testBase, "fake.com"),
 	}
 	projects, err := h.ListProjects()
 	require.NoError(t, err)
@@ -37,7 +34,7 @@ func TestListNamespaces(t *testing.T) {
 	h := project.Host{
 		Name:      "fake.com",
 		Flavor:    "github",
-		Directory: "./testdata/fake.com",
+		Directory: path.Join(testBase, "fake.com"),
 	}
 	nss, err := h.ListNamespaces()
 	require.NoError(t, err)
