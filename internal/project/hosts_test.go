@@ -1,6 +1,8 @@
 package project_test
 
 import (
+	"os"
+	"path"
 	"testing"
 
 	"github.com/drewstinnett/sourceseedy/internal/project"
@@ -19,10 +21,12 @@ func TestListHosts(t *testing.T) {
 }
 
 func TestListProjects(t *testing.T) {
+	base := BuildTestStruct()
+	defer os.RemoveAll(base)
 	h := project.Host{
 		Name:      "fake.com",
 		Flavor:    "github",
-		Directory: "./testdata/fake.com",
+		Directory: path.Join(base, "fake.com"),
 	}
 	projects, err := h.ListProjects()
 	require.NoError(t, err)
