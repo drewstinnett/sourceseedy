@@ -1,11 +1,27 @@
-package sourceseedy_test
+package project_test
 
 import (
 	"testing"
 
-	"github.com/drewstinnett/sourceseedy/sourceseedy"
+	"github.com/drewstinnett/sourceseedy/internal/project"
 	"github.com/stretchr/testify/require"
 )
+
+func TestProjectFullID(t *testing.T) {
+	tests := []struct {
+		project project.Project
+		want    string
+	}{
+		{
+			project.Project{Name: "foo", Host: "github.com", Namespace: "mygroup"},
+			"github.com/mygroup/foo",
+		},
+	}
+	for _, test := range tests {
+		got := test.project.FullID()
+		require.Equal(t, test.want, got)
+	}
+}
 
 func TestDetectProperPathFromURL(t *testing.T) {
 	tests := []struct {
@@ -17,7 +33,7 @@ func TestDetectProperPathFromURL(t *testing.T) {
 		{"bad", "", true},
 	}
 	for _, tt := range tests {
-		got, err := sourceseedy.DetectProperPathFromURL(tt.remote)
+		got, err := project.DetectProperPathFromURL(tt.remote)
 		require.Equal(t, tt.want, got)
 		if tt.wanterr {
 			require.Error(t, err)

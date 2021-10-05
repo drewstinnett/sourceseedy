@@ -1,4 +1,4 @@
-package sourceseedy
+package project
 
 import (
 	"io/ioutil"
@@ -36,8 +36,8 @@ func (h Host) ListProjects() ([]string, error) {
 }
 
 func ListHosts(dir string) ([]Host, error) {
-	files, err := ioutil.ReadDir(dir)
 	var hosts []Host
+	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}

@@ -1,4 +1,4 @@
-package sourceseedy
+package archive
 
 import (
 	"os/exec"

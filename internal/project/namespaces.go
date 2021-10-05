@@ -1,4 +1,4 @@
-package sourceseedy
+package project
 
 import (
 	"os"

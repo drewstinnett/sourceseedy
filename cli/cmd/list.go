@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/drewstinnett/sourceseedy/sourceseedy"
+	"github.com/drewstinnett/sourceseedy/internal/project"
 	"github.com/spf13/cobra"
 )
 
@@ -35,7 +35,7 @@ var listCmd = &cobra.Command{
 	Short: "List projects in your source directory",
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println("Listing source repositories in ", base)
-		items, err := sourceseedy.ListAllProjectFullIDs(base)
+		items, err := project.ListAllProjectFullIDs(base)
 		cobra.CheckErr(err)
 		for _, item := range items {
 			fmt.Println(item)

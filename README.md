@@ -1,3 +1,3 @@
 # Source Seedy (Source CD)
 
-Change directories quickly using a predined source structure
+Quickly navigate and control your source code, using defined paths

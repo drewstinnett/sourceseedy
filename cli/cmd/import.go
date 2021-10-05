@@ -1,12 +1,15 @@
 package cmd
 
 import (
+	"io/ioutil"
 	"os"
 	"path"
 
+	"github.com/drewstinnett/sourceseedy/internal/git"
+	"github.com/drewstinnett/sourceseedy/internal/project"
+	"github.com/drewstinnett/sourceseedy/internal/util"
+	ggit "github.com/go-git/go-git/v5"
 	log "github.com/sirupsen/logrus"
-
-	"github.com/drewstinnett/sourceseedy/sourceseedy"
 	"github.com/spf13/cobra"
 )
 
@@ -25,26 +28,38 @@ import and move it over. Use the git remote URL to decide where it should go`,
 			log.Warning("Running in dry-run mode!")
 		}
 		for _, item := range args {
-			if !sourceseedy.IsGitRepo(item) {
-				log.Warningf("%v is not a git repo", item)
-				continue
+			if !git.IsLocalGitRepo(item) {
+				log.Debugf("%v is not a git repo, attempting to clone it", item)
+				dir, err := ioutil.TempDir("", "sourceseedy")
+				if err != nil {
+					cobra.CheckErr(err)
+				}
+				log.Println(dir)
+				_, err = ggit.PlainClone(dir, false, &ggit.CloneOptions{
+					URL:      item,
+					Progress: os.Stdout,
+				})
+				cobra.CheckErr(err)
+				item = dir
+				defer os.RemoveAll(dir)
 			}
-			target, err := sourceseedy.DetectProperPath(item)
+			target, err := project.DetectProperPath(item)
 			if err != nil {
 				log.Warning("Could not detect path of", item)
 				continue
 			}
-			ppath := sourceseedy.GetParentPath(target)
+			ppath := util.GetParentPath(target)
 			fullPpath := path.Join(base, ppath)
 			log.Printf("Importing %v → %v", item, target)
-			if !sourceseedy.IsDir(fullPpath) {
+			if !util.IsDir(fullPpath) {
 				log.Println("Creating: ", fullPpath)
 				if !dr {
-					os.MkdirAll(fullPpath, os.ModePerm)
+					err := os.MkdirAll(fullPpath, os.ModePerm)
+					cobra.CheckErr(err)
 				}
 			}
 			fullTarget := path.Join(base, target)
-			if sourceseedy.IsDir(fullTarget) {
+			if util.IsDir(fullTarget) {
 				log.Warningf("Target dir %v already exists", fullTarget)
 				continue
 			}

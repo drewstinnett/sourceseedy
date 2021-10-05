@@ -27,7 +27,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/drewstinnett/sourceseedy/sourceseedy"
+	"github.com/drewstinnett/sourceseedy/internal/archive"
+	"github.com/drewstinnett/sourceseedy/internal/finder"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -44,7 +45,7 @@ chooser will pop up`,
 		var project, repo string
 		var err error
 		if len(args) == 0 {
-			project, err = sourceseedy.FzfProjects(base)
+			project, err = finder.FzfProjects(base)
 			cobra.CheckErr(err)
 			// repo = path.Join(base, project)
 		} else {
@@ -55,7 +56,7 @@ chooser will pop up`,
 
 		archiveFilename := path.Join(base, "archive", strings.ReplaceAll(project, "/", "-")+"-"+time.Now().Format("20060102150405")+".tar")
 		gzName := archiveFilename + ".gz"
-		err = sourceseedy.CreateArchive(base, project, gzName)
+		err = archive.CreateArchive(base, project, gzName)
 		cobra.CheckErr(err)
 		log.Println("Created:", gzName)
 	},

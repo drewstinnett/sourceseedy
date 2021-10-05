@@ -25,41 +25,35 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/drewstinnett/sourceseedy/sourceseedy"
+	"github.com/drewstinnett/sourceseedy/internal/finder"
 	"github.com/spf13/cobra"
 )
 
 // fzfCmd represents the fzf command
 var fzfCmd = &cobra.Command{
-	Use:   "fzf",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Use:   "fzf [initial filter]",
+	Short: "Use Fzf to jump in to a source directory",
+	Long: `Quick method of jumping around source directories, using Fzf. Throw something
+like this in your .zshrc for easier usage:
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+scd() {
+  target=$(/usr/local/bin/sourceseedy fzf)
+  cd $target
+}
+
+If given a filter arg, the fzf command will pass that in as an initial string to
+match`,
+	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		thing, err := sourceseedy.FzfProjects(base)
+		var thing string
+		var err error
+		if len(args) > 0 {
+			thing, err = finder.StreamFzfProjects(base, args[0])
+		} else {
+			thing, err = finder.StreamFzfProjects(base, "")
+		}
 		cobra.CheckErr(err)
 		fmt.Println(path.Join(base, thing))
-
-		// r := strings.NewReader("")
-		/*
-			r := new(bytes.Buffer)
-			var thing string
-			for _, h := range hs {
-				projects, err := h.ListProjects()
-				cobra.CheckErr(err)
-				for _, d := range projects {
-					line := fmt.Sprintf(path.Join(h.Name, d) + "\n")
-					r.Write([]byte(line))
-				}
-			}
-			thing, err = sourceseedy.Fzf(r)
-			cobra.CheckErr(err)
-			fmt.Println(path.Join(base, thing))
-		*/
 	},
 }
 
