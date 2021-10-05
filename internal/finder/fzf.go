@@ -1,4 +1,4 @@
-package sourceseedy
+package finder
 
 import (
 	"bytes"
@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/drewstinnett/sourceseedy/internal/project"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -44,7 +45,7 @@ func Fzf(data io.Reader) (string, error) {
 }
 
 func FzfProjects(base string) (string, error) {
-	projects, err := ListAllProjectFullIDs(base)
+	projects, err := project.ListAllProjectFullIDs(base)
 	if err != nil {
 		return "", err
 	}
@@ -79,8 +80,8 @@ func fzfWithFilter(command string, input func(in io.WriteCloser)) string {
 }
 
 func StreamFzfProjects(base, filter string) (string, error) {
-	var namespaces []Namespace
-	hs, err := ListHosts(base)
+	var namespaces []project.Namespace
+	hs, err := project.ListHosts(base)
 	if err != nil {
 		return "", err
 	}
@@ -101,7 +102,7 @@ func StreamFzfProjects(base, filter string) (string, error) {
 		var wg sync.WaitGroup
 		for _, namespace := range namespaces {
 			wg.Add(1)
-			go func(namespace Namespace) {
+			go func(namespace project.Namespace) {
 				defer wg.Done()
 				projects, err := namespace.ListProjects()
 				if err != nil {

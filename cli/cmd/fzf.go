@@ -25,13 +25,13 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/drewstinnett/sourceseedy/sourceseedy"
+	"github.com/drewstinnett/sourceseedy/internal/finder"
 	"github.com/spf13/cobra"
 )
 
 // fzfCmd represents the fzf command
 var fzfCmd = &cobra.Command{
-	Use:   "fzf [filter]",
+	Use:   "fzf [initial filter]",
 	Short: "Use Fzf to jump in to a source directory",
 	Long: `Quick method of jumping around source directories, using Fzf. Throw something
 like this in your .zshrc for easier usage:
@@ -48,9 +48,9 @@ match`,
 		var thing string
 		var err error
 		if len(args) > 0 {
-			thing, err = sourceseedy.StreamFzfProjects(base, args[0])
+			thing, err = finder.StreamFzfProjects(base, args[0])
 		} else {
-			thing, err = sourceseedy.StreamFzfProjects(base, "")
+			thing, err = finder.StreamFzfProjects(base, "")
 		}
 		cobra.CheckErr(err)
 		fmt.Println(path.Join(base, thing))

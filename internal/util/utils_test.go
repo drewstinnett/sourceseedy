@@ -1,9 +1,9 @@
-package sourceseedy_test
+package util_test
 
 import (
 	"testing"
 
-	"github.com/drewstinnett/sourceseedy/sourceseedy"
+	"github.com/drewstinnett/sourceseedy/internal/util"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,7 +17,7 @@ func TestGetParentPath(t *testing.T) {
 		{"relative/src/thing/repo", "relative/src/thing"},
 	}
 	for _, tt := range tests {
-		got := sourceseedy.GetParentPath(tt.path)
+		got := util.GetParentPath(tt.path)
 		require.Equal(t, tt.want, got)
 	}
 }
