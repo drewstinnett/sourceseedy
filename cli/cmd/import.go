@@ -38,12 +38,6 @@ import and move it over. Use the git remote URL to decide where it should go`,
 				cmd := exec.Command("git", "clone", item, dir)
 				err = cmd.Run()
 				cobra.CheckErr(err)
-				/*
-					_, err = ggit.PlainClone(dir, false, &ggit.CloneOptions{
-						URL:      item,
-						Progress: os.Stdout,
-					})
-				*/
 				item = dir
 				defer os.RemoveAll(dir)
 			}

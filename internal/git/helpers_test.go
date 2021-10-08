@@ -4,10 +4,26 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"testing"
 )
 
-func BuildTestStruct() string {
-	base, err := ioutil.TempDir("", "sourceseedy-tests")
+var testBase string
+
+func TestMain(m *testing.M) {
+	// exec setUp function
+	setUp()
+	// exec test and this returns an exit code to pass to os
+	retCode := m.Run()
+	// exec tearDown function
+	tearDown()
+	// If exit code is distinct of zero,
+	// the test will be failed (red)
+	os.Exit(retCode)
+}
+
+func setUp() {
+	var err error
+	testBase, err = ioutil.TempDir("", "sourceseedy-tests")
 	if err != nil {
 		panic(err)
 	}
@@ -17,10 +33,13 @@ func BuildTestStruct() string {
 		"badhost/.fakedir/thing/.git",
 		"fake.com/emptydir/",
 	} {
-		err := os.MkdirAll(path.Join(base, item), 0o755)
+		err := os.MkdirAll(path.Join(testBase, item), 0o755)
 		if err != nil {
 			panic(err)
 		}
 	}
-	return base
+}
+
+func tearDown() {
+	os.RemoveAll(testBase)
 }
