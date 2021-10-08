@@ -66,6 +66,7 @@ func DetectProperPathFromURL(url string) (string, error) {
 
 func ListAllProjectFullIDs(b string) ([]string, error) {
 	var namespaces []Namespace
+
 	hs, err := ListHosts(b)
 	if err != nil {
 		return nil, err

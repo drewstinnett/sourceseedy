@@ -1,6 +1,10 @@
 package project_test
 
 import (
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"path"
 	"testing"
 
 	"github.com/drewstinnett/sourceseedy/internal/project"
@@ -40,5 +44,48 @@ func TestDetectProperPathFromURL(t *testing.T) {
 		} else {
 			require.NoError(t, err)
 		}
+	}
+}
+
+func TestListAllProjectFullIDs(t *testing.T) {
+	ps, err := project.ListAllProjectFullIDs(testBase)
+	require.NoError(t, err)
+	require.Greater(t, len(ps), 0)
+	require.Subset(t, ps, []string{"fake.com/somenamespace/someproject"})
+}
+
+func TestDetectProperPath(t *testing.T) {
+	fakedir, err := ioutil.TempDir("", "sourceseedy-tests-path")
+	defer os.RemoveAll(fakedir)
+	if err != nil {
+		panic(err)
+	}
+	tests := []struct {
+		base    string
+		remotes []string
+		want    string
+	}{
+		{
+			"test-origin",
+			[]string{"origin", "github.com/foo/bar"},
+			"github.com/foo/bar",
+		},
+	}
+	for _, test := range tests {
+		testdir := path.Join(fakedir, test.base)
+		err := os.MkdirAll(testdir, 0o755)
+		require.NoError(t, err)
+		cmd := exec.Command("git", "init", ".")
+		cmd.Dir = testdir
+		err = cmd.Run()
+		require.NoError(t, err)
+		cmd = exec.Command("git", "remote", "add", test.remotes[0], test.remotes[1])
+		cmd.Dir = testdir
+		err = cmd.Run()
+		require.NoError(t, err)
+
+		got, err := project.DetectProperPath(testdir)
+		require.NoError(t, err)
+		require.Equal(t, test.want, got)
 	}
 }
