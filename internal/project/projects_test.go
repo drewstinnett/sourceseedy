@@ -1,8 +1,12 @@
 package project_test
 
 import (
+	"io/ioutil"
+	"os"
+	"path"
 	"testing"
 
+	"github.com/drewstinnett/sourceseedy/internal/git"
 	"github.com/drewstinnett/sourceseedy/internal/project"
 	"github.com/stretchr/testify/require"
 )
@@ -40,5 +44,49 @@ func TestDetectProperPathFromURL(t *testing.T) {
 		} else {
 			require.NoError(t, err)
 		}
+	}
+}
+
+func TestListAllProjectFullIDs(t *testing.T) {
+	ps, err := project.ListAllProjectFullIDs(testBase)
+	require.NoError(t, err)
+	require.Greater(t, len(ps), 0)
+	require.Subset(t, ps, []string{"fake.com/somenamespace/someproject"})
+}
+
+func TestDetectProperPath(t *testing.T) {
+	fakedir, err := ioutil.TempDir("", "sourceseedy-tests-path")
+	defer os.RemoveAll(fakedir)
+	if err != nil {
+		panic(err)
+	}
+	tests := []struct {
+		base    string
+		remotes []string
+		want    string
+	}{
+		{
+			"test-origin",
+			[]string{"origin", "github.com/foo/bar"},
+			"github.com/foo/bar",
+		},
+	}
+	for _, test := range tests {
+		testdir := path.Join(fakedir, test.base)
+		err := os.MkdirAll(testdir, 0o755)
+		require.NoError(t, err)
+
+		c := &git.SysGitConfig{
+			Directory: testdir,
+		}
+		err = git.SysGit(c, "init", ".")
+		require.NoError(t, err)
+
+		err = git.SysGit(c, "remote", "add", test.remotes[0], test.remotes[1])
+		require.NoError(t, err)
+
+		got, err := project.DetectProperPath(testdir)
+		require.NoError(t, err)
+		require.Equal(t, test.want, got)
 	}
 }

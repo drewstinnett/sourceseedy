@@ -3,6 +3,7 @@ package git
 import (
 	"io"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
@@ -40,4 +41,23 @@ func FindGit(dir string) (result []string, err error) {
 	}
 
 	return
+}
+
+type SysGitConfig struct {
+	Directory string
+}
+
+// SysGit system call to git command
+func SysGit(c *SysGitConfig, args ...string) error {
+	cmd := exec.Command("git", args...)
+	if c != nil {
+		if c.Directory != "" {
+			cmd.Dir = c.Directory
+		}
+	}
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+	return nil
 }

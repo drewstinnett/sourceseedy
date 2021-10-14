@@ -3,12 +3,12 @@ package cmd
 import (
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 
 	"github.com/drewstinnett/sourceseedy/internal/git"
 	"github.com/drewstinnett/sourceseedy/internal/project"
 	"github.com/drewstinnett/sourceseedy/internal/util"
-	ggit "github.com/go-git/go-git/v5"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -35,10 +35,8 @@ import and move it over. Use the git remote URL to decide where it should go`,
 					cobra.CheckErr(err)
 				}
 				log.Println(dir)
-				_, err = ggit.PlainClone(dir, false, &ggit.CloneOptions{
-					URL:      item,
-					Progress: os.Stdout,
-				})
+				cmd := exec.Command("git", "clone", item, dir)
+				err = cmd.Run()
 				cobra.CheckErr(err)
 				item = dir
 				defer os.RemoveAll(dir)
