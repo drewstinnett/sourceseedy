@@ -3,10 +3,10 @@ package project_test
 import (
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path"
 	"testing"
 
+	"github.com/drewstinnett/sourceseedy/internal/git"
 	"github.com/drewstinnett/sourceseedy/internal/project"
 	"github.com/stretchr/testify/require"
 )
@@ -75,13 +75,14 @@ func TestDetectProperPath(t *testing.T) {
 		testdir := path.Join(fakedir, test.base)
 		err := os.MkdirAll(testdir, 0o755)
 		require.NoError(t, err)
-		cmd := exec.Command("git", "init", ".")
-		cmd.Dir = testdir
-		err = cmd.Run()
+
+		c := &git.SysGitConfig{
+			Directory: testdir,
+		}
+		err = git.SysGit(c, "init", ".")
 		require.NoError(t, err)
-		cmd = exec.Command("git", "remote", "add", test.remotes[0], test.remotes[1])
-		cmd.Dir = testdir
-		err = cmd.Run()
+
+		err = git.SysGit(c, "remote", "add", test.remotes[0], test.remotes[1])
 		require.NoError(t, err)
 
 		got, err := project.DetectProperPath(testdir)
