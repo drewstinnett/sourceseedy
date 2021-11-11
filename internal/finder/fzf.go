@@ -9,8 +9,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/apex/log"
 	"github.com/drewstinnett/sourceseedy/internal/project"
-	log "github.com/sirupsen/logrus"
 )
 
 func Fzf(data io.Reader) (string, error) {
@@ -106,7 +106,7 @@ func StreamFzfProjects(base, filter string) (string, error) {
 				defer wg.Done()
 				projects, err := namespace.ListProjects()
 				if err != nil {
-					log.Warning(err)
+					log.WithError(err)
 				}
 				for _, project := range projects {
 					fmt.Fprintln(in, project.FullID())

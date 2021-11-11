@@ -6,10 +6,10 @@ import (
 	"os/exec"
 	"path"
 
+	"github.com/apex/log"
 	"github.com/drewstinnett/sourceseedy/internal/git"
 	"github.com/drewstinnett/sourceseedy/internal/project"
 	"github.com/drewstinnett/sourceseedy/internal/util"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -25,16 +25,18 @@ import and move it over. Use the git remote URL to decide where it should go`,
 		cobra.CheckErr(err)
 
 		if dr {
-			log.Warning("Running in dry-run mode!")
+			log.Info("Running in dry-run mode!")
 		}
 		for _, item := range args {
+			origItem := item
 			if !git.IsLocalGitRepo(item) {
-				log.Debugf("%v is not a git repo, attempting to clone it", item)
+				log.WithFields(log.Fields{
+					"gitrepo": item,
+				}).Debug("Not found on host, attempting to clone it")
 				dir, err := ioutil.TempDir("", "sourceseedy")
 				if err != nil {
 					cobra.CheckErr(err)
 				}
-				log.Println(dir)
 				cmd := exec.Command("git", "clone", item, dir)
 				err = cmd.Run()
 				cobra.CheckErr(err)
@@ -43,14 +45,18 @@ import and move it over. Use the git remote URL to decide where it should go`,
 			}
 			target, err := project.DetectProperPath(item)
 			if err != nil {
-				log.Warning("Could not detect path of", item)
+				log.WithFields(log.Fields{}).Warn("Could not detect path")
 				continue
 			}
 			ppath := util.GetParentPath(target)
 			fullPpath := path.Join(base, ppath)
-			log.Printf("Importing %v → %v", item, target)
+			log.WithFields(log.Fields{
+				"repo": origItem,
+			}).Info("Importing")
 			if !util.IsDir(fullPpath) {
-				log.Println("Creating: ", fullPpath)
+				log.WithFields(log.Fields{
+					"path": fullPpath,
+				}).Info("Creating parent path")
 				if !dr {
 					err := os.MkdirAll(fullPpath, os.ModePerm)
 					cobra.CheckErr(err)
@@ -58,13 +64,18 @@ import and move it over. Use the git remote URL to decide where it should go`,
 			}
 			fullTarget := path.Join(base, target)
 			if util.IsDir(fullTarget) {
-				log.Warningf("Target dir %v already exists", fullTarget)
+				log.WithFields(log.Fields{
+					"path": fullTarget,
+				}).Info("Target dir already exists")
 				continue
 			}
 
 			if !dr {
 				err := os.Rename(item, fullTarget)
 				cobra.CheckErr(err)
+				log.WithFields(log.Fields{
+					"directory": fullTarget,
+				}).Info("Imported source")
 			}
 		}
 	},
