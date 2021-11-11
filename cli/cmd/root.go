@@ -25,6 +25,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/apex/log"
+	"github.com/apex/log/handlers/cli"
 	"github.com/spf13/cobra"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -34,6 +36,7 @@ import (
 var (
 	cfgFile string
 	base    string
+	Verbose bool
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -53,9 +56,13 @@ ${repo} - The repo itself`,
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if Verbose {
+			log.SetLevel(log.DebugLevel)
+		}
 		var err error
 		base, err = homedir.Expand(base)
 		cobra.CheckErr(err)
+		log.SetHandler(cli.Default)
 	},
 }
 
@@ -77,6 +84,7 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
+	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Enable verbose logging")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
