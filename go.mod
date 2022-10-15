@@ -3,9 +3,9 @@ module github.com/drewstinnett/sourceseedy
 go 1.19
 
 require (
-	github.com/apex/log v1.9.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/rs/zerolog v1.28.0
 	github.com/spf13/cobra v1.6.0
 	github.com/spf13/viper v1.13.0
 	github.com/stretchr/testify v1.8.0
@@ -19,7 +19,6 @@ require (
 	github.com/cloudflare/circl v1.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
-	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.3.1 // indirect
@@ -34,7 +33,6 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/spf13/afero v1.9.2 // indirect

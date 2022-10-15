@@ -25,8 +25,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/apex/log"
-	"github.com/apex/log/handlers/cli"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -58,13 +58,9 @@ ${repo} - The repo itself`,
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		if Verbose {
-			log.SetLevel(log.DebugLevel)
-		}
 		var err error
 		base, err = homedir.Expand(base)
 		cobra.CheckErr(err)
-		log.SetHandler(cli.Default)
 	},
 }
 
@@ -103,6 +99,11 @@ func initConfig() {
 		// Search config in home directory with name ".cli" (without extension).
 		viper.AddConfigPath(home)
 		viper.SetConfigName(".sourceseedy")
+	}
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	if Verbose {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
