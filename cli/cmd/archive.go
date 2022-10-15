@@ -27,9 +27,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/apex/log"
 	"github.com/drewstinnett/sourceseedy/internal/archive"
 	"github.com/drewstinnett/sourceseedy/internal/finder"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -58,7 +58,7 @@ chooser will pop up`,
 		gzName := archiveFilename + ".gz"
 		err = archive.CreateArchive(base, project, gzName)
 		cobra.CheckErr(err)
-		log.WithFields(log.Fields{"archive": gzName}).Info("Created:")
+		log.Info().Str("archive", gzName).Msg("Created archive")
 	},
 }
 

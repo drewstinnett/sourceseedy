@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/apex/log"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 
 	ggit "github.com/go-git/go-git/v5"
@@ -43,7 +43,7 @@ func DetectProperPath(fpath string) (string, error) {
 		for _, url := range remote.Config().URLs {
 			u, err := DetectProperPathFromURL(url)
 			if err != nil {
-				log.WithError(err)
+				log.Error().Err(err).Msg("Error detecting path")
 				continue
 			}
 			return path.Join(u), nil
