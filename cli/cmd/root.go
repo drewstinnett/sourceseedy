@@ -37,12 +37,14 @@ var (
 	cfgFile string
 	base    string
 	Verbose bool
+	version string = "dev"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "sourceseedy",
-	Short: "Quickly move around your source code directories",
+	Use:     "sourceseedy",
+	Short:   "Quickly move around your source code directories",
+	Version: version,
 	Long: `Quickly move around your various source directories, assuming a standard
 directory structure of:
 
