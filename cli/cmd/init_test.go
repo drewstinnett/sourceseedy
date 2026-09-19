@@ -99,7 +99,7 @@ func TestShellInitInRealShells(t *testing.T) {
 				if shell != "fish" {
 					source = ". " + codeFile
 				}
-				ctx, cancelCtx := context.WithTimeout(context.Background(), 30*time.Second)
+				ctx, cancelCtx := context.WithTimeout(t.Context(), 30*time.Second)
 				defer cancelCtx()
 				cmd := exec.CommandContext(ctx, bin, append(noConfig, "-c", source+"; scd myfilter; pwd -P")...)
 				cmd.Dir = start

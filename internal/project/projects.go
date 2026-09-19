@@ -34,7 +34,7 @@ func DetectProperPath(fpath string) (string, error) {
 		return "", err
 	}
 
-	for _, remote := range strings.Split(out, "\n") {
+	for remote := range strings.SplitSeq(out, "\n") {
 		u, err := TargetFromRemote(strings.TrimSpace(remote))
 		if err != nil {
 			slog.Error("Error detecting path", "err", err)
@@ -100,9 +100,7 @@ func ListAllProjectFullIDs(b string) ([]string, error) {
 	errs := make([]error, len(namespaces))
 	var wg sync.WaitGroup
 	for i, namespace := range namespaces {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			projects, err := namespace.ListProjects()
 			if err != nil {
 				errs[i] = err
@@ -111,7 +109,7 @@ func ListAllProjectFullIDs(b string) ([]string, error) {
 			for _, project := range projects {
 				batches[i] = append(batches[i], project.FullID())
 			}
-		}()
+		})
 	}
 	wg.Wait()
 	if err := errors.Join(errs...); err != nil {

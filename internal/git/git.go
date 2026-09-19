@@ -13,14 +13,7 @@ import (
 func IsLocalGitRepo(rpath string) bool {
 	gitPath := path.Join(rpath, ".git")
 	fileInfo, err := os.Stat(gitPath)
-	if err != nil {
-		return false
-	}
-
-	if fileInfo.IsDir() {
-		return true
-	}
-	return false
+	return err == nil && fileInfo.IsDir()
 }
 
 // SysGitConfig configures how SysGit and SysGitOutput run git

@@ -62,9 +62,7 @@ func StreamFzfProjects(base, filter string) (string, error) {
 		var mu sync.Mutex
 		var wg sync.WaitGroup
 		for _, namespace := range namespaces {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				projects, err := namespace.ListProjects()
 				if err != nil {
 					slog.Error("Error listing projects", "err", err)
@@ -79,7 +77,7 @@ func StreamFzfProjects(base, filter string) (string, error) {
 						return
 					}
 				}
-			}()
+			})
 		}
 		wg.Wait()
 	})
