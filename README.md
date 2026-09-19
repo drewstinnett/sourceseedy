@@ -177,7 +177,45 @@ that need attention: uncommitted or untracked files, unpushed commits, a branch
 with no upstream or one that's been deleted, a detached HEAD, or a repo with no
 commits. Pass `--all` to include clean ones too, or `--json` for scripts.
 
-This doesn't fetch, so "behind" is as of your last fetch.
+This doesn't fetch, so "behind" is as of your last fetch. Run `sourceseedy sync`
+first to bring that up to date.
+
+## Syncing Projects
+
+Bring everything up to date in one go:
+
+```
+$ sourceseedy sync
+✓ Updated  github.com/a/api        main  3 commits
+! Skipped  github.com/a/tools      uncommitted changes
+! Skipped  github.com/a/website    diverged (ahead 1, behind 2)
+! Failed   git.example.com/b/old   git fetch: repository not found
+! Synced   41 projects, 1 updated, 2 skipped, 1 failed
+```
+
+It fetches every project, several at once, and forgets remote branches that
+were deleted. Then it moves the branch you have checked out up to its upstream,
+but only when that is a fast-forward and the working tree is clean. It never
+rebases, merges, or stashes, so a project with local changes, or commits that
+aren't pushed, is left alone and shows up as `Skipped`.
+
+Only projects that were updated, skipped, or failed are listed, and `--all` adds
+the rest. The exit status is non-zero when a project failed, and not when one
+was skipped, so it is fine to run from cron.
+
+| Flag | |
+| --- | --- |
+| `-f`, `--fetch-only` | Fetch, and never move a branch. Says which projects are behind |
+| `-d`, `--dry-run` | Fetch, and say what would be updated without updating it |
+| `-a`, `--all` | Include projects with nothing to do |
+| `--json` | An array of `{id, path, result, branch, commits, reason, error}` |
+
+Even a dry run fetches, since that only changes what git knows about the remote,
+and never your branches. Git can't ask for a password while this runs, and a
+project that hasn't answered in two minutes is given up on, so if your remotes
+need an ssh passphrase, load it in to `ssh-agent` first. A host that times out
+on three projects without answering any is skipped for the rest, and when a host
+fails for many projects in the same way, that is one line instead of one each.
 
 ## Archiving Projects
 
