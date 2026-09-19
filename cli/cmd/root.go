@@ -30,6 +30,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/drewstinnett/sourceseedy/internal/finder"
@@ -119,7 +120,7 @@ func run(args []string) error {
 		cmd.flags(fs)
 	}
 	fs.Usage = func() { commandUsage(cmd, fs) }
-	_ = fs.Parse(args[1:])
+	positional, _ := parseFlags(fs, args[1:])
 
 	// Status lines are how commands talk to people, slog is for diagnostics
 	level := slog.LevelWarn
@@ -133,7 +134,32 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	return cmd.run(fs.Args())
+	return cmd.run(positional)
+}
+
+// parseFlags parses args in to fs, and returns what is left over. Unlike
+// fs.Parse, which stops at the first argument that isn't a flag, flags may come
+// after arguments too: `import ./repo -d`. Without that, -d would be taken as
+// another repo and the import would be done for real. Everything after a bare
+// -- is left alone as arguments, for things that start with a dash
+func parseFlags(fs *flag.FlagSet, args []string) ([]string, error) {
+	var afterDashes []string
+	if i := slices.Index(args, "--"); i >= 0 {
+		args, afterDashes = args[:i], args[i+1:]
+	}
+	var positional []string
+	for {
+		if err := fs.Parse(args); err != nil {
+			return nil, err
+		}
+		args = fs.Args()
+		if len(args) == 0 {
+			return append(positional, afterDashes...), nil
+		}
+		// Parse stopped at an argument, so take it and carry on with the rest
+		positional = append(positional, args[0])
+		args = args[1:]
+	}
 }
 
 // globalFlags registers flags that are valid both before and after the subcommand
