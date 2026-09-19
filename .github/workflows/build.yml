@@ -52,16 +52,14 @@ jobs:
         with:
           go-version-file: go.mod
       -
-        # Builds every target, archive and the Homebrew formula without
-        # publishing, so a broken release config fails here instead of on a tag
+        # Builds every target and archive without publishing, so a broken
+        # release config fails here instead of on a tag
         name: Build snapshot
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: goreleaser/goreleaser-action@v7
         with:
           version: '~> v2'
           args: release --snapshot --clean --skip=publish
-        env:
-          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
       -
         name: Run GoReleaser
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
@@ -71,4 +69,3 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
