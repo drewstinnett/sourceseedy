@@ -1,0 +1,3 @@
+# Keep LF on every OS. Windows checkouts would otherwise get CRLF, which
+# trips gofmt and makes `go mod tidy -diff` see go.mod as untidy
+* text=auto eol=lf

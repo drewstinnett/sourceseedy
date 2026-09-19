@@ -2,34 +2,56 @@ package finder_test
 
 import (
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"testing"
 
+	"github.com/drewstinnett/sourceseedy/internal/fakeexe"
 	"github.com/drewstinnett/sourceseedy/internal/finder"
 )
 
-// fakeFzf puts an fzf script on PATH that records its args and stdin in dir,
-// prints out, and exits with code
+func TestMain(m *testing.M) {
+	if fakeexe.Is("fzf") {
+		fakeFzfMain()
+	}
+	os.Exit(m.Run())
+}
+
+// fakeFzfMain is what the fake fzf does when TestMain finds itself running as
+// fzf. The test says what to do through environment variables
+func fakeFzfMain() {
+	for _, a := range os.Args[1:] {
+		f, err := os.OpenFile(os.Getenv("FAKE_FZF_ARGS_FILE"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+		if err != nil {
+			os.Exit(99)
+		}
+		fmt.Fprintln(f, a)
+		_ = f.Close()
+	}
+	in, _ := io.ReadAll(os.Stdin)
+	if err := os.WriteFile(os.Getenv("FAKE_FZF_STDIN_FILE"), in, 0o600); err != nil {
+		os.Exit(99)
+	}
+	fmt.Println(os.Getenv("FAKE_FZF_OUT"))
+	code, _ := strconv.Atoi(os.Getenv("FAKE_FZF_CODE"))
+	os.Exit(code)
+}
+
+// fakeFzf puts an fzf on PATH that records its args and stdin, prints out, and
+// exits with code. It returns the files the args and stdin end up in
 func fakeFzf(t *testing.T, out string, code int) (argsFile, stdinFile string) {
 	t.Helper()
-	if runtime.GOOS == "windows" {
-		t.Skip("fake fzf is a shell script")
-	}
 	dir := t.TempDir()
 	argsFile = filepath.Join(dir, "args")
 	stdinFile = filepath.Join(dir, "stdin")
-	script := "#!/bin/sh\n" +
-		"for a in \"$@\"; do printf '%s\\n' \"$a\" >> '" + argsFile + "'; done\n" +
-		"cat > '" + stdinFile + "'\n" +
-		"printf '%s\\n' '" + out + "'\n" +
-		"exit " + strconv.Itoa(code) + "\n"
-	if err := os.WriteFile(filepath.Join(dir, "fzf"), []byte(script), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("FAKE_FZF_ARGS_FILE", argsFile)
+	t.Setenv("FAKE_FZF_STDIN_FILE", stdinFile)
+	t.Setenv("FAKE_FZF_OUT", out)
+	t.Setenv("FAKE_FZF_CODE", strconv.Itoa(code))
+	fakeexe.Install(t, "fzf")
 	return argsFile, stdinFile
 }
 
@@ -88,5 +110,17 @@ func TestStreamFzfProjectsFilterIsLiteral(t *testing.T) {
 	}
 	if _, err := os.Stat(marker); err == nil {
 		t.Error("filter was executed by a shell")
+	}
+}
+
+func TestStreamFzfProjectsTrimsCRLF(t *testing.T) {
+	// fzf on Windows may end its lines with \r\n
+	fakeFzf(t, "github.com/a/one\r", 0)
+	got, err := finder.StreamFzfProjects(newBase(t), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "github.com/a/one" {
+		t.Errorf("got %q", got)
 	}
 }

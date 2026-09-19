@@ -3,7 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"path"
+	"path/filepath"
 
 	"github.com/drewstinnett/sourceseedy/internal/finder"
 )
@@ -30,7 +30,7 @@ match. Exits 1 without printing anything if nothing is selected`,
 			if err != nil {
 				return err
 			}
-			fmt.Fprintln(stdout, path.Join(base, thing))
+			fmt.Fprintln(stdout, filepath.Join(base, filepath.FromSlash(thing)))
 			return nil
 		},
 	})

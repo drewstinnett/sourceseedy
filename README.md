@@ -37,9 +37,22 @@ eval "$(sourceseedy init zsh)"
 sourceseedy init fish | source
 ```
 
+```powershell
+# PowerShell
+sourceseedy init powershell | Out-String | Invoke-Expression
+```
+
 Then `scd` opens the fzf list, and `scd myproj` starts it filtered to `myproj`.
 Backing out of fzf with Esc leaves you where you are. Use `--name` to call the
 function something other than `scd`.
+
+## Windows
+
+Windows 10 and up works. Put `git` and [`fzf`](https://github.com/junegunn/fzf)
+on your `PATH` (`winget install fzf` or `scoop install fzf`), and add the
+PowerShell line above to your profile (`notepad $PROFILE`). The default base
+directory is `~/src`, which is `C:\Users\you\src`. Releases for Windows are
+`.zip` files.
 
 ## Cloning Projects
 
