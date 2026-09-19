@@ -98,10 +98,10 @@ $ sourceseedy list
 ## Archiving Projects
 
 ```
-$ sourcseedy archive [project]
+$ sourceseedy archive [project]
 ```
 
 This will just create a tar.gz of the project you select, and put it in `$base/archive`.
 The path of the archive is printed to stdout when it isn't a terminal
 
-I use this when I'm about to do somethink wonky in git that I'm worried will bust my copy
+I use this when I'm about to do something wonky in git that I'm worried will bust my copy
