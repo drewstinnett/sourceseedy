@@ -2,11 +2,9 @@ package cmd
 
 import (
 	"errors"
-	"flag"
 	"log/slog"
 	"os"
-	"os/exec"
-	"path"
+	"path/filepath"
 
 	"github.com/drewstinnett/sourceseedy/internal/git"
 	"github.com/drewstinnett/sourceseedy/internal/project"
@@ -20,67 +18,65 @@ func init() {
 		usage: "import [flags] <repo>...",
 		short: "Import a new git repo in to your structure",
 		long: `Got a repo somewhere outside of the standard structure? Use this command to
-import and move it over. Use the git remote URL to decide where it should go`,
-		flags: func(fs *flag.FlagSet) {
-			for _, name := range []string{"dry-run", "d"} {
-				fs.BoolVar(&dr, name, false, "Just do a dry run, don't actually import")
-			}
-		},
+import and move it over. Use the git remote URL to decide where it should go.
+Remote URLs are cloned straight in to place, same as the clone command. The path
+of each imported repo is printed to stdout when it is not a terminal, so this
+works: cd "$(sourceseedy import https://github.com/a/b.git)"`,
+		flags: dryRunFlag(&dr),
 		run: func(args []string) error {
 			if len(args) < 1 {
 				return errors.New("import requires at least 1 arg")
 			}
-			if dr {
-				slog.Info("Running in dry-run mode!")
-			}
 			for _, item := range args {
-				origItem := item
 				if !git.IsLocalGitRepo(item) {
 					slog.Debug("Not found on host, attempting to clone it", "gitrepo", item)
-					dir, err := os.MkdirTemp("", "sourceseedy")
+					dest, err := cloneRemote(item, dr)
 					if err != nil {
 						return err
 					}
-					defer func() {
-						if err := os.RemoveAll(dir); err != nil {
-							slog.Warn("Could not clean up temp dir", "dir", dir, "err", err)
-						}
-					}()
-					if err := exec.Command("git", "clone", item, dir).Run(); err != nil {
-						return err
-					}
-					item = dir
-				}
-				target, err := project.DetectProperPath(item)
-				if err != nil {
-					slog.Warn("Could not detect path")
-					continue
-				}
-				ppath := util.GetParentPath(target)
-				fullPpath := path.Join(base, ppath)
-				slog.Info("Importing", "repo", origItem)
-				if !util.IsDir(fullPpath) {
-					slog.Info("Creating parent path", "path", fullPpath)
 					if !dr {
-						if err := os.MkdirAll(fullPpath, os.ModePerm); err != nil {
-							return err
-						}
+						emitPath(dest)
 					}
-				}
-				fullTarget := path.Join(base, target)
-				if util.IsDir(fullTarget) {
-					slog.Info("Target dir already exists", "path", fullTarget)
 					continue
 				}
-
-				if !dr {
-					if err := os.Rename(item, fullTarget); err != nil {
-						return err
-					}
-					slog.Info("Imported source", "directory", fullTarget)
+				if err := importLocal(item, dr); err != nil {
+					return err
 				}
 			}
 			return nil
 		},
 	})
+}
+
+// importLocal moves the local git repo at item in to its proper place under
+// base and reports what happened. Nothing is moved when dryRun is set. A repo
+// that can't be placed, or whose place is taken, is skipped rather than failed
+func importLocal(item string, dryRun bool) error {
+	target, err := project.DetectProperPath(item)
+	if err != nil {
+		warn("Skipped", tildePath(item)+": "+err.Error())
+		return nil
+	}
+	fullTarget := filepath.Join(base, target)
+	if util.IsDir(fullTarget) {
+		warn("Skipped", tildePath(item)+": "+tildePath(fullTarget)+" already exists")
+		return nil
+	}
+	if dryRun {
+		preview("Would move", tildePath(item)+" → "+tildePath(fullTarget))
+		return nil
+	}
+	fullPpath := filepath.Join(base, util.GetParentPath(target))
+	if !util.IsDir(fullPpath) {
+		slog.Debug("Creating parent path", "path", fullPpath)
+		if err := os.MkdirAll(fullPpath, os.ModePerm); err != nil {
+			return err
+		}
+	}
+	if err := os.Rename(item, fullTarget); err != nil {
+		return err
+	}
+	done("Moved", tildePath(item)+" → "+tildePath(fullTarget))
+	emitPath(fullTarget)
+	return nil
 }

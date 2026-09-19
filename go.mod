@@ -1,3 +1,3 @@
 module github.com/drewstinnett/sourceseedy
 
-go 1.22
+go 1.27

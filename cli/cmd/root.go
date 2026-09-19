@@ -36,7 +36,7 @@ import (
 )
 
 var (
-	base    = "~/src"
+	base    string
 	verbose bool
 	// Set at build time with -ldflags -X
 	version = "dev"
@@ -49,7 +49,7 @@ directory structure of:
 
 ${base}/${remote-host}/${namespace}/${repo}
 
-${base} - Defaults to ~/src
+${base} - Defaults to $SOURCESEEDY_BASE, or ~/src if that is not set
 ${remote-host} - This will be something like github.com, gitlab.com, gitlab.yourco.com
 ${namespace} - Namespace containing the repo. This could be just the owner, or a nested group
 ${repo} - The repo itself`
@@ -75,12 +75,21 @@ func Execute() {
 		if errors.Is(err, finder.ErrNoSelection) {
 			os.Exit(1)
 		}
-		fmt.Fprintln(os.Stderr, "Error:", err)
+		fmt.Fprintln(stderr, "Error:", err)
 		os.Exit(1)
 	}
 }
 
+// defaultBase is the base directory used when -base isn't given
+func defaultBase() string {
+	if b := os.Getenv("SOURCESEEDY_BASE"); b != "" {
+		return b
+	}
+	return "~/src"
+}
+
 func run(args []string) error {
+	base = defaultBase()
 	root := flag.NewFlagSet("sourceseedy", flag.ExitOnError)
 	globalFlags(root)
 	showVersion := root.Bool("version", false, "Print the version and exit")
@@ -88,7 +97,7 @@ func run(args []string) error {
 	_ = root.Parse(args)
 
 	if *showVersion {
-		fmt.Printf("sourceseedy version %s (commit %s, built %s)\n", version, commit, date)
+		fmt.Fprintf(stdout, "sourceseedy version %s (commit %s, built %s)\n", version, commit, date)
 		return nil
 	}
 
@@ -112,11 +121,12 @@ func run(args []string) error {
 	fs.Usage = func() { commandUsage(cmd, fs) }
 	_ = fs.Parse(args[1:])
 
-	level := slog.LevelInfo
+	// Status lines are how commands talk to people, slog is for diagnostics
+	level := slog.LevelWarn
 	if verbose {
 		level = slog.LevelDebug
 	}
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})))
+	slog.SetDefault(slog.New(slog.NewTextHandler(stderr, &slog.HandlerOptions{Level: level})))
 
 	var err error
 	base, err = expandHome(base)
@@ -129,7 +139,7 @@ func run(args []string) error {
 // globalFlags registers flags that are valid both before and after the subcommand
 func globalFlags(fs *flag.FlagSet) {
 	for _, name := range []string{"base", "b"} {
-		fs.StringVar(&base, name, base, "Base directory containing sources")
+		fs.StringVar(&base, name, base, "Base directory containing sources, defaults to $SOURCESEEDY_BASE")
 	}
 	for _, name := range []string{"verbose", "v"} {
 		fs.BoolVar(&verbose, name, verbose, "Enable verbose logging")

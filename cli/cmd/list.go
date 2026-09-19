@@ -24,7 +24,6 @@ package cmd
 
 import (
 	"fmt"
-	"log/slog"
 
 	"github.com/drewstinnett/sourceseedy/internal/project"
 )
@@ -35,13 +34,12 @@ func init() {
 		usage: "list",
 		short: "List projects in your source directory",
 		run: func(_ []string) error {
-			slog.Info("Listing source repositories", "base", base)
 			items, err := project.ListAllProjectFullIDs(base)
 			if err != nil {
 				return err
 			}
 			for _, item := range items {
-				fmt.Println(item)
+				fmt.Fprintln(stdout, item)
 			}
 			return nil
 		},

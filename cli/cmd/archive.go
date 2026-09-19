@@ -25,7 +25,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"log/slog"
 	"path/filepath"
 	"strings"
 	"time"
@@ -61,7 +60,8 @@ chooser will pop up`,
 			if err := archive.CreateArchive(base, project, gzName); err != nil {
 				return err
 			}
-			slog.Info("Created archive", "archive", gzName)
+			done("Archived", project+" → "+tildePath(gzName))
+			emitPath(gzName)
 			return nil
 		},
 	})
