@@ -19,9 +19,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
+
 package cmd
 
 import (
+	"errors"
+	"log/slog"
 	"path"
 	"path/filepath"
 	"strings"
@@ -29,49 +32,42 @@ import (
 
 	"github.com/drewstinnett/sourceseedy/internal/archive"
 	"github.com/drewstinnett/sourceseedy/internal/finder"
-	"github.com/rs/zerolog/log"
-	"github.com/spf13/cobra"
 )
 
-// archiveCmd represents the archive command
-var archiveCmd = &cobra.Command{
-	Use:   "archive [directory]",
-	Short: "Compress and copy a repo in to the 'archive' directory",
-	Long: `Use this if you are gonna make a big scary change, and wanna make sure you have
+func init() {
+	commands = append(commands, &command{
+		name:  "archive",
+		usage: "archive [directory]",
+		short: "Compress and copy a repo in to the 'archive' directory",
+		long: `Use this if you are gonna make a big scary change, and wanna make sure you have
 a copy of everything stashed in ti ${base}/archived. If no directory is specified, an fzf
 chooser will pop up`,
-	Args: cobra.MaximumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		var project, repo string
-		var err error
-		if len(args) == 0 {
-			project, err = finder.FzfProjects(base)
-			cobra.CheckErr(err)
-			// repo = path.Join(base, project)
-		} else {
-			repo, err = filepath.Abs(args[0])
-			cobra.CheckErr(err)
-			project = strings.TrimPrefix(repo, base+"/")
-		}
+		run: func(args []string) error {
+			if len(args) > 1 {
+				return errors.New("archive accepts at most 1 arg")
+			}
+			var project string
+			if len(args) == 0 {
+				var err error
+				project, err = finder.FzfProjects(base)
+				if err != nil {
+					return err
+				}
+			} else {
+				repo, err := filepath.Abs(args[0])
+				if err != nil {
+					return err
+				}
+				project = strings.TrimPrefix(repo, base+"/")
+			}
 
-		archiveFilename := path.Join(base, "archive", strings.ReplaceAll(project, "/", "-")+"-"+time.Now().Format("20060102150405")+".tar")
-		gzName := archiveFilename + ".gz"
-		err = archive.CreateArchive(base, project, gzName)
-		cobra.CheckErr(err)
-		log.Info().Str("archive", gzName).Msg("Created archive")
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(archiveCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// archiveCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// archiveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+			archiveFilename := path.Join(base, "archive", strings.ReplaceAll(project, "/", "-")+"-"+time.Now().Format("20060102150405")+".tar")
+			gzName := archiveFilename + ".gz"
+			if err := archive.CreateArchive(base, project, gzName); err != nil {
+				return err
+			}
+			slog.Info("Created archive", "archive", gzName)
+			return nil
+		},
+	})
 }

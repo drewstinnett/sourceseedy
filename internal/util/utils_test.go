@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/drewstinnett/sourceseedy/internal/util"
-	"github.com/stretchr/testify/require"
 )
 
 func TestGetParentPath(t *testing.T) {
@@ -17,8 +16,9 @@ func TestGetParentPath(t *testing.T) {
 		{"relative/src/thing/repo", "relative/src/thing"},
 	}
 	for _, tt := range tests {
-		got := util.GetParentPath(tt.path)
-		require.Equal(t, tt.want, got)
+		if got := util.GetParentPath(tt.path); got != tt.want {
+			t.Errorf("got %q, want %q", got, tt.want)
+		}
 	}
 }
 
@@ -31,7 +31,8 @@ func TestIsDir(t *testing.T) {
 		{"./testdata/exists", true},
 	}
 	for _, test := range tests {
-		got := util.IsDir(test.dir)
-		require.Equal(t, test.want, got)
+		if got := util.IsDir(test.dir); got != test.want {
+			t.Errorf("%v: got %v, want %v", test.dir, got, test.want)
+		}
 	}
 }

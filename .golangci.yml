@@ -1,9 +1,18 @@
+version: "2"
 linters:
   enable:
     - thelper
-    - gofumpt
     - tparallel
     - unconvert
     - unparam
     - wastedassign
     - revive
+  settings:
+    errcheck:
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+formatters:
+  enable:
+    - gofumpt

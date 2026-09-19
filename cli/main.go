@@ -23,7 +23,6 @@ package main
 
 import "github.com/drewstinnett/sourceseedy/cli/cmd"
 
-
 func main() {
 	cmd.Execute()
 }
