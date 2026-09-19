@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -95,4 +96,11 @@ func tildePath(p string) string {
 		return "~" + string(filepath.Separator) + rest
 	}
 	return p
+}
+
+// writeJSON prints v to stdout as indented JSON
+func writeJSON(v any) error {
+	enc := json.NewEncoder(stdout)
+	enc.SetIndent("", "  ")
+	return enc.Encode(v)
 }
