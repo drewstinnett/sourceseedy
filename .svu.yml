@@ -1,0 +1,10 @@
+# svu decides the next version from the conventional commits since the last tag.
+# https://github.com/caarlos0/svu
+#
+# fix: is a patch, feat: is a minor, and anything else (docs, chore, ci, build,
+# refactor, test, style, perf, revert) doesn't release on its own.
+
+# While still on 0.x, a breaking change (feat!:, or a BREAKING CHANGE: footer)
+# bumps the minor rather than jumping to v1.0.0. Tag v1.0.0 by hand when it's
+# time, and after that this has no effect.
+v0: true

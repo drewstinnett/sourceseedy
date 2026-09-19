@@ -1,0 +1,29 @@
+---
+name: pr-title
+
+# Pull requests are squash-merged, so the title becomes the commit on main, and
+# releases are worked out from those commits. See README.md
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  title:
+    name: conventional title
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Check the title
+        # The title goes in through the environment, not the script, so a
+        # title can't run anything
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        shell: bash
+        run: |
+          types='feat|fix|perf|revert|docs|style|refactor|test|build|ci|chore'
+          re="^($types)(\\([A-Za-z0-9._/-]+\\))?!?: .+"
+          if ! [[ $TITLE =~ $re ]]; then
+            echo "::error title=Pull request title::'$TITLE' isn't a conventional commit. Use type(scope): summary, where type is one of: ${types//|/, }. Add ! after the type for a breaking change."
+            exit 1
+          fi
+          echo "'$TITLE' looks good"

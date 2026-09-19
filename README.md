@@ -143,3 +143,28 @@ This will just create a tar.gz of the project you select, and put it in `$base/a
 The path of the archive is printed to stdout when it isn't a terminal
 
 I use this when I'm about to do something wonky in git that I'm worried will bust my copy
+## Releasing
+
+Releases are automatic. Pull requests are squash-merged, so the PR title becomes
+the commit on `main`, and it has to be a [conventional
+commit](https://www.conventionalcommits.org): `type(scope): summary`. CI checks
+the title. When a merge to `main` has a `feat` or `fix` in it since the last
+tag, CI tags the next version and publishes a GitHub release, with notes made
+from the commits.
+
+| PR title | Release |
+| --- | --- |
+| `fix: ...` | patch, `v0.2.6` → `v0.2.7` |
+| `feat: ...` | minor, `v0.2.6` → `v0.3.0` |
+| `feat!: ...`, or a `BREAKING CHANGE:` footer in the PR description | minor while on 0.x, so it can't jump to `v1.0.0` by accident. Major from 1.0 |
+| `docs`, `chore`, `ci`, `build`, `refactor`, `test`, `style`, `perf`, `revert` | none |
+
+`perf` doesn't release on its own, so use `fix` for a speedup people should get.
+A run's summary says what it would release, and for a pull request that is what
+merging it would do.
+
+When it's time for `v1.0.0`, tag it by hand (`git tag v1.0.0 && git push origin
+v1.0.0`), which is released as it is. The version rules are in `.svu.yml`, and
+the logic is in `.github/scripts/release-version.sh`, with tests next to it.
+If publishing fails after the tag is pushed, the tag is removed again so that
+the next merge tries again.
