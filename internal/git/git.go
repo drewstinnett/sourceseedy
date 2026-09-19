@@ -2,6 +2,7 @@
 package git
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -55,4 +56,16 @@ func SysGitOutput(c *SysGitConfig, args ...string) (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(string(out)), nil
+}
+
+// Clone runs git clone of remote in to dest. Git's output goes to stderr, so
+// stdout stays clean for callers that print a result
+func Clone(remote, dest string) error {
+	cmd := exec.Command("git", "clone", "--", remote, dest)
+	cmd.Stdout = os.Stderr
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("git clone %s: %w", remote, err)
+	}
+	return nil
 }

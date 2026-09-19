@@ -35,7 +35,7 @@ func DetectProperPath(fpath string) (string, error) {
 	}
 
 	for _, remote := range strings.Split(out, "\n") {
-		u, err := DetectProperPathFromURL(strings.TrimSpace(remote))
+		u, err := TargetFromRemote(strings.TrimSpace(remote))
 		if err != nil {
 			slog.Error("Error detecting path", "err", err)
 			continue

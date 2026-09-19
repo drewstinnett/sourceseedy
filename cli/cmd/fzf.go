@@ -13,15 +13,11 @@ func init() {
 		name:  "fzf",
 		usage: "fzf [initial filter]",
 		short: "Use Fzf to jump in to a source directory",
-		long: `Quick method of jumping around source directories, using Fzf. Throw something
-like this in your .zshrc for easier usage:
-
-scd() {
-  target=$(/usr/local/bin/sourceseedy fzf "$@") && cd "$target"
-}
+		long: `Quick method of jumping around source directories, using Fzf. To get a scd
+shell function that runs this and cd's for you, see: sourceseedy init --help
 
 If given a filter arg, the fzf command will pass that in as an initial string to
-match`,
+match. Exits 1 without printing anything if nothing is selected`,
 		run: func(args []string) error {
 			if len(args) > 1 {
 				return errors.New("fzf accepts at most 1 arg")
