@@ -23,36 +23,26 @@ package cmd
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/drewstinnett/sourceseedy/internal/project"
-	"github.com/spf13/cobra"
 )
 
-// listCmd represents the list command
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List projects in your source directory",
-	Run: func(cmd *cobra.Command, args []string) {
-		log.Println("Listing source repositories in ", base)
-		items, err := project.ListAllProjectFullIDs(base)
-		cobra.CheckErr(err)
-		for _, item := range items {
-			fmt.Println(item)
-		}
-	},
-}
-
 func init() {
-	rootCmd.AddCommand(listCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// listCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	commands = append(commands, &command{
+		name:  "list",
+		usage: "list",
+		short: "List projects in your source directory",
+		run: func(args []string) error {
+			slog.Info("Listing source repositories", "base", base)
+			items, err := project.ListAllProjectFullIDs(base)
+			if err != nil {
+				return err
+			}
+			for _, item := range items {
+				fmt.Println(item)
+			}
+			return nil
+		},
+	})
 }

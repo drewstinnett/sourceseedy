@@ -5,18 +5,22 @@ import (
 	"testing"
 
 	"github.com/drewstinnett/sourceseedy/internal/project"
-	"github.com/stretchr/testify/require"
 )
 
 func TestListHosts(t *testing.T) {
 	hosts, err := project.ListHosts(testBase)
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Make sure we got hosts back
-	require.Greater(t, len(hosts), 0)
+	if len(hosts) == 0 {
+		t.Error("expected hosts, got none")
+	}
 
-	_, err = project.ListHosts("./not-exists")
-	require.Error(t, err)
+	if _, err = project.ListHosts("./not-exists"); err == nil {
+		t.Error("expected error listing non-existent base")
+	}
 }
 
 func TestListProjects(t *testing.T) {
@@ -26,8 +30,12 @@ func TestListProjects(t *testing.T) {
 		Directory: path.Join(testBase, "fake.com"),
 	}
 	projects, err := h.ListProjects()
-	require.NoError(t, err)
-	require.Greater(t, len(projects), 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(projects) == 0 {
+		t.Error("expected projects, got none")
+	}
 }
 
 func TestListNamespaces(t *testing.T) {
@@ -37,6 +45,10 @@ func TestListNamespaces(t *testing.T) {
 		Directory: path.Join(testBase, "fake.com"),
 	}
 	nss, err := h.ListNamespaces()
-	require.NoError(t, err)
-	require.Greater(t, len(nss), 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(nss) == 0 {
+		t.Error("expected namespaces, got none")
+	}
 }

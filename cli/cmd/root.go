@@ -22,30 +22,21 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"flag"
 	"fmt"
+	"log/slog"
 	"os"
-
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-	"github.com/spf13/cobra"
-
-	homedir "github.com/mitchellh/go-homedir"
-	"github.com/spf13/viper"
+	"path/filepath"
+	"strings"
 )
 
 var (
-	cfgFile string
-	base    string
+	base    = "~/src"
 	Verbose bool
 	version string = "dev"
 )
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:     "sourceseedy",
-	Short:   "Quickly move around your source code directories",
-	Version: version,
-	Long: `Quickly move around your various source directories, assuming a standard
+const longDescription = `Quickly move around your various source directories, assuming a standard
 directory structure of:
 
 ${base}/${remote-host}/${namespace}/${repo}
@@ -53,63 +44,122 @@ ${base}/${remote-host}/${namespace}/${repo}
 ${base} - Defaults to ~/src
 ${remote-host} - This will be something like github.com, gitlab.com, gitlab.yourco.com
 ${namespace} - Namespace containing the repo. This could be just the owner, or a nested group
-${repo} - The repo itself`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		var err error
-		base, err = homedir.Expand(base)
-		cobra.CheckErr(err)
-	},
+${repo} - The repo itself`
+
+// command is a single sourceseedy subcommand
+type command struct {
+	name  string
+	usage string
+	short string
+	long  string
+	flags func(fs *flag.FlagSet)
+	run   func(args []string) error
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+var commands []*command
+
+// Execute parses the command line and runs the requested subcommand.
+// This is called by main.main().
 func Execute() {
-	cobra.CheckErr(rootCmd.Execute())
-}
-
-func init() {
-	cobra.OnInitialize(initConfig)
-
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.sourceseedy.yaml)")
-	rootCmd.PersistentFlags().StringVarP(&base, "base", "b", "~/src", "Base directory containing sources")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Enable verbose logging")
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		cobra.CheckErr(err)
-
-		// Search config in home directory with name ".cli" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".sourceseedy")
+	if err := run(os.Args[1:]); err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		os.Exit(1)
 	}
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+}
+
+func run(args []string) error {
+	root := flag.NewFlagSet("sourceseedy", flag.ExitOnError)
+	globalFlags(root)
+	showVersion := root.Bool("version", false, "Print the version and exit")
+	root.Usage = func() { rootUsage(root) }
+	_ = root.Parse(args)
+
+	if *showVersion {
+		fmt.Println("sourceseedy version", version)
+		return nil
+	}
+
+	args = root.Args()
+	if len(args) == 0 || args[0] == "help" {
+		root.Usage()
+		return nil
+	}
+
+	cmd := findCommand(args[0])
+	if cmd == nil {
+		root.Usage()
+		return fmt.Errorf("unknown command %q", args[0])
+	}
+
+	fs := flag.NewFlagSet(cmd.name, flag.ExitOnError)
+	globalFlags(fs)
+	if cmd.flags != nil {
+		cmd.flags(fs)
+	}
+	fs.Usage = func() { commandUsage(cmd, fs) }
+	_ = fs.Parse(args[1:])
+
+	level := slog.LevelInfo
 	if Verbose {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		level = slog.LevelDebug
 	}
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})))
 
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+	var err error
+	base, err = expandHome(base)
+	if err != nil {
+		return err
 	}
+	return cmd.run(fs.Args())
+}
+
+// globalFlags registers flags that are valid both before and after the subcommand
+func globalFlags(fs *flag.FlagSet) {
+	for _, name := range []string{"base", "b"} {
+		fs.StringVar(&base, name, base, "Base directory containing sources")
+	}
+	for _, name := range []string{"verbose", "v"} {
+		fs.BoolVar(&Verbose, name, Verbose, "Enable verbose logging")
+	}
+}
+
+func findCommand(name string) *command {
+	for _, c := range commands {
+		if c.name == name {
+			return c
+		}
+	}
+	return nil
+}
+
+func rootUsage(fs *flag.FlagSet) {
+	out := fs.Output()
+	fmt.Fprintf(out, "%s\n\nUsage:\n  sourceseedy [flags] <command> [args]\n\nCommands:\n", longDescription)
+	for _, c := range commands {
+		fmt.Fprintf(out, "  %-10s %s\n", c.name, c.short)
+	}
+	fmt.Fprintln(out, "\nFlags:")
+	fs.PrintDefaults()
+}
+
+func commandUsage(c *command, fs *flag.FlagSet) {
+	out := fs.Output()
+	desc := c.long
+	if desc == "" {
+		desc = c.short
+	}
+	fmt.Fprintf(out, "%s\n\nUsage:\n  sourceseedy %s\n\nFlags:\n", desc, c.usage)
+	fs.PrintDefaults()
+}
+
+// expandHome replaces a leading ~ in p with the current user's home directory
+func expandHome(p string) (string, error) {
+	if p != "~" && !strings.HasPrefix(p, "~/") {
+		return p, nil
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, p[1:]), nil
 }

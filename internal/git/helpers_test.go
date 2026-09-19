@@ -1,7 +1,6 @@
 package git_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -23,7 +22,7 @@ func TestMain(m *testing.M) {
 
 func setUp() {
 	var err error
-	testBase, err = ioutil.TempDir("", "sourceseedy-tests")
+	testBase, err = os.MkdirTemp("", "sourceseedy-tests")
 	if err != nil {
 		panic(err)
 	}

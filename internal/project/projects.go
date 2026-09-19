@@ -3,15 +3,13 @@ package project
 import (
 	"errors"
 	"fmt"
+	"log/slog"
+	"net/url"
 	"path"
 	"strings"
 	"sync"
 
-	"github.com/rs/zerolog/log"
-	"github.com/spf13/cobra"
-
-	ggit "github.com/go-git/go-git/v5"
-	giturls "github.com/whilp/git-urls"
+	"github.com/drewstinnett/sourceseedy/internal/git"
 )
 
 type Project struct {
@@ -26,42 +24,47 @@ func (p Project) FullID() string {
 }
 
 func DetectProperPath(fpath string) (string, error) {
-	g, err := ggit.PlainOpen(fpath)
-	if err != nil {
-		return "", err
-	}
-	r, err := g.Remotes()
+	out, err := git.SysGitOutput(&git.SysGitConfig{Directory: fpath}, "remote", "get-url", "--all", "origin")
 	if err != nil {
 		return "", err
 	}
 
-	for _, remote := range r {
-		// Only look at origins
-		if remote.Config().Name != "origin" {
+	for _, remote := range strings.Split(out, "\n") {
+		u, err := DetectProperPathFromURL(strings.TrimSpace(remote))
+		if err != nil {
+			slog.Error("Error detecting path", "err", err)
 			continue
 		}
-		for _, url := range remote.Config().URLs {
-			u, err := DetectProperPathFromURL(url)
-			if err != nil {
-				log.Error().Err(err).Msg("Error detecting path")
-				continue
-			}
-			return path.Join(u), nil
-		}
+		return u, nil
 	}
 	return "", errors.New("CouldNotDetecProperPath")
 }
 
-func DetectProperPathFromURL(url string) (string, error) {
-	if !strings.Contains(url, "/") {
+// DetectProperPathFromURL converts a git remote URL (e.g. https://host/ns/repo.git
+// or git@host:ns/repo.git) in to a host/namespace/repo path
+func DetectProperPathFromURL(remote string) (string, error) {
+	if !strings.Contains(remote, "/") {
 		return "", errors.New("Missing / in URL")
 	}
-	u, err := giturls.Parse(url)
-	if err != nil {
-		return "", err
+	var host, upath string
+	switch {
+	case strings.Contains(remote, "://"):
+		u, err := url.Parse(remote)
+		if err != nil {
+			return "", err
+		}
+		host, upath = u.Hostname(), u.Path
+	case strings.Contains(remote, ":"):
+		// scp-like syntax: [user@]host:path
+		host, upath, _ = strings.Cut(remote, ":")
+		if _, h, ok := strings.Cut(host, "@"); ok {
+			host = h
+		}
+	default:
+		upath = remote
 	}
-	upath := strings.TrimSuffix(u.Path, ".git")
-	return path.Join(u.Host, upath), nil
+	upath = strings.TrimSuffix(upath, ".git")
+	return path.Join(host, upath), nil
 }
 
 func ListAllProjectFullIDs(b string) ([]string, error) {
@@ -80,15 +83,18 @@ func ListAllProjectFullIDs(b string) ([]string, error) {
 		namespaces = append(namespaces, ns...)
 	}
 
-	// c := make(chan string)
 	c := make(chan []string, len(namespaces))
+	errc := make(chan error, len(namespaces))
 	var wg sync.WaitGroup
 	for _, namespace := range namespaces {
 		wg.Add(1)
 		go func(namespace Namespace) {
 			defer wg.Done()
 			projects, err := namespace.ListProjects()
-			cobra.CheckErr(err)
+			if err != nil {
+				errc <- err
+				return
+			}
 			var batch []string
 			for _, project := range projects {
 				batch = append(batch, project.FullID())
@@ -98,6 +104,10 @@ func ListAllProjectFullIDs(b string) ([]string, error) {
 	}
 	wg.Wait()
 	close(c)
+	close(errc)
+	if err := <-errc; err != nil {
+		return nil, err
+	}
 	var results []string
 	for item := range c {
 		results = append(results, item...)

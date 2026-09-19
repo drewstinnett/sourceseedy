@@ -1,14 +1,12 @@
 package project_test
 
 import (
-	"io/ioutil"
-	"os"
 	"path"
+	"slices"
 	"testing"
 
 	"github.com/drewstinnett/sourceseedy/internal/git"
 	"github.com/drewstinnett/sourceseedy/internal/project"
-	"github.com/stretchr/testify/require"
 )
 
 func TestProjectFullID(t *testing.T) {
@@ -22,8 +20,9 @@ func TestProjectFullID(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		got := test.project.FullID()
-		require.Equal(t, test.want, got)
+		if got := test.project.FullID(); got != test.want {
+			t.Errorf("got %q, want %q", got, test.want)
+		}
 	}
 }
 
@@ -34,32 +33,38 @@ func TestDetectProperPathFromURL(t *testing.T) {
 		wanterr bool
 	}{
 		{"git@github.com:drewstinnett/sourceseedy.git", "github.com/drewstinnett/sourceseedy", false},
+		{"git@github.com:a/b", "github.com/a/b", false},
+		{"https://github.com/a/b.git", "github.com/a/b", false},
+		{"https://user@github.com/a/b.git", "github.com/a/b", false},
+		{"ssh://git@gitlab.com:2222/grp/sub/repo.git", "gitlab.com/grp/sub/repo", false},
+		{"github.com/foo/bar", "github.com/foo/bar", false},
 		{"bad", "", true},
 	}
 	for _, tt := range tests {
 		got, err := project.DetectProperPathFromURL(tt.remote)
-		require.Equal(t, tt.want, got)
-		if tt.wanterr {
-			require.Error(t, err)
-		} else {
-			require.NoError(t, err)
+		if got != tt.want {
+			t.Errorf("%v: got %q, want %q", tt.remote, got, tt.want)
+		}
+		if tt.wanterr && err == nil {
+			t.Errorf("%v: expected error", tt.remote)
+		} else if !tt.wanterr && err != nil {
+			t.Errorf("%v: unexpected error: %v", tt.remote, err)
 		}
 	}
 }
 
 func TestListAllProjectFullIDs(t *testing.T) {
 	ps, err := project.ListAllProjectFullIDs(testBase)
-	require.NoError(t, err)
-	require.Greater(t, len(ps), 0)
-	require.Subset(t, ps, []string{"fake.com/somenamespace/someproject"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(ps, "fake.com/somenamespace/someproject") {
+		t.Errorf("expected fake.com/somenamespace/someproject in %v", ps)
+	}
 }
 
 func TestDetectProperPath(t *testing.T) {
-	fakedir, err := ioutil.TempDir("", "sourceseedy-tests-path")
-	defer os.RemoveAll(fakedir)
-	if err != nil {
-		panic(err)
-	}
+	fakedir := t.TempDir()
 	tests := []struct {
 		base    string
 		remotes []string
@@ -70,23 +75,29 @@ func TestDetectProperPath(t *testing.T) {
 			[]string{"origin", "github.com/foo/bar"},
 			"github.com/foo/bar",
 		},
+		{
+			"test-scp-origin",
+			[]string{"origin", "git@github.com:foo/baz.git"},
+			"github.com/foo/baz",
+		},
 	}
 	for _, test := range tests {
-		testdir := path.Join(fakedir, test.base)
-		err := os.MkdirAll(testdir, 0o755)
-		require.NoError(t, err)
-
 		c := &git.SysGitConfig{
-			Directory: testdir,
+			Directory: path.Join(fakedir, test.base),
 		}
-		err = git.SysGit(c, "init", ".")
-		require.NoError(t, err)
+		if err := git.SysGit(nil, "init", c.Directory); err != nil {
+			t.Fatal(err)
+		}
+		if err := git.SysGit(c, "remote", "add", test.remotes[0], test.remotes[1]); err != nil {
+			t.Fatal(err)
+		}
 
-		err = git.SysGit(c, "remote", "add", test.remotes[0], test.remotes[1])
-		require.NoError(t, err)
-
-		got, err := project.DetectProperPath(testdir)
-		require.NoError(t, err)
-		require.Equal(t, test.want, got)
+		got, err := project.DetectProperPath(c.Directory)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != test.want {
+			t.Errorf("got %q, want %q", got, test.want)
+		}
 	}
 }

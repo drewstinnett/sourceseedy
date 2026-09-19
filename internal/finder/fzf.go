@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
 	"sync"
 
 	"github.com/drewstinnett/sourceseedy/internal/project"
-	"github.com/rs/zerolog/log"
 )
 
 func Fzf(data io.Reader) (string, error) {
@@ -106,7 +106,7 @@ func StreamFzfProjects(base, filter string) (string, error) {
 				defer wg.Done()
 				projects, err := namespace.ListProjects()
 				if err != nil {
-					log.Error().Err(err).Msg("Error listing projects")
+					slog.Error("Error listing projects", "err", err)
 				}
 				for _, project := range projects {
 					fmt.Fprintln(in, project.FullID())
