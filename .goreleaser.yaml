@@ -45,6 +45,8 @@ brews:
     homepage: "https://github.com/drewstinnett/sourceseedy"
     license: BSD-2-Clause
     caveats: |
-      Add the following in your ~/.zshrc or ~/.profile for faster typin':
+      Add the following to your shell config to get the scd command, which
+      fzf's your way in to a project:
 
-        alias scd="#{opt_bin}/sourceseedy"
+        bash, zsh: eval "$(sourceseedy init zsh)"
+        fish:      sourceseedy init fish | source

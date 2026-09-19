@@ -36,7 +36,7 @@ import (
 )
 
 var (
-	base    = "~/src"
+	base    string
 	verbose bool
 	// Set at build time with -ldflags -X
 	version = "dev"
@@ -49,7 +49,7 @@ directory structure of:
 
 ${base}/${remote-host}/${namespace}/${repo}
 
-${base} - Defaults to ~/src
+${base} - Defaults to $SOURCESEEDY_BASE, or ~/src if that is not set
 ${remote-host} - This will be something like github.com, gitlab.com, gitlab.yourco.com
 ${namespace} - Namespace containing the repo. This could be just the owner, or a nested group
 ${repo} - The repo itself`
@@ -80,7 +80,16 @@ func Execute() {
 	}
 }
 
+// defaultBase is the base directory used when -base isn't given
+func defaultBase() string {
+	if b := os.Getenv("SOURCESEEDY_BASE"); b != "" {
+		return b
+	}
+	return "~/src"
+}
+
 func run(args []string) error {
+	base = defaultBase()
 	root := flag.NewFlagSet("sourceseedy", flag.ExitOnError)
 	globalFlags(root)
 	showVersion := root.Bool("version", false, "Print the version and exit")
@@ -129,7 +138,7 @@ func run(args []string) error {
 // globalFlags registers flags that are valid both before and after the subcommand
 func globalFlags(fs *flag.FlagSet) {
 	for _, name := range []string{"base", "b"} {
-		fs.StringVar(&base, name, base, "Base directory containing sources")
+		fs.StringVar(&base, name, base, "Base directory containing sources, defaults to $SOURCESEEDY_BASE")
 	}
 	for _, name := range []string{"verbose", "v"} {
 		fs.BoolVar(&verbose, name, verbose, "Enable verbose logging")

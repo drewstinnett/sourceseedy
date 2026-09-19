@@ -2,11 +2,9 @@ package cmd
 
 import (
 	"errors"
-	"flag"
 	"log/slog"
 	"os"
-	"os/exec"
-	"path"
+	"path/filepath"
 
 	"github.com/drewstinnett/sourceseedy/internal/git"
 	"github.com/drewstinnett/sourceseedy/internal/project"
@@ -20,12 +18,9 @@ func init() {
 		usage: "import [flags] <repo>...",
 		short: "Import a new git repo in to your structure",
 		long: `Got a repo somewhere outside of the standard structure? Use this command to
-import and move it over. Use the git remote URL to decide where it should go`,
-		flags: func(fs *flag.FlagSet) {
-			for _, name := range []string{"dry-run", "d"} {
-				fs.BoolVar(&dr, name, false, "Just do a dry run, don't actually import")
-			}
-		},
+import and move it over. Use the git remote URL to decide where it should go.
+Remote URLs are cloned straight in to place, same as the clone command`,
+		flags: dryRunFlag(&dr),
 		run: func(args []string) error {
 			if len(args) < 1 {
 				return errors.New("import requires at least 1 arg")
@@ -34,31 +29,21 @@ import and move it over. Use the git remote URL to decide where it should go`,
 				slog.Info("Running in dry-run mode!")
 			}
 			for _, item := range args {
-				origItem := item
 				if !git.IsLocalGitRepo(item) {
 					slog.Debug("Not found on host, attempting to clone it", "gitrepo", item)
-					dir, err := os.MkdirTemp("", "sourceseedy")
-					if err != nil {
+					if _, err := cloneRemote(item, dr); err != nil {
 						return err
 					}
-					defer func() {
-						if err := os.RemoveAll(dir); err != nil {
-							slog.Warn("Could not clean up temp dir", "dir", dir, "err", err)
-						}
-					}()
-					if err := exec.Command("git", "clone", item, dir).Run(); err != nil {
-						return err
-					}
-					item = dir
+					continue
 				}
 				target, err := project.DetectProperPath(item)
 				if err != nil {
-					slog.Warn("Could not detect path")
+					slog.Warn("Could not detect path", "repo", item, "err", err)
 					continue
 				}
 				ppath := util.GetParentPath(target)
-				fullPpath := path.Join(base, ppath)
-				slog.Info("Importing", "repo", origItem)
+				fullPpath := filepath.Join(base, ppath)
+				slog.Info("Importing", "repo", item)
 				if !util.IsDir(fullPpath) {
 					slog.Info("Creating parent path", "path", fullPpath)
 					if !dr {
@@ -67,7 +52,7 @@ import and move it over. Use the git remote URL to decide where it should go`,
 						}
 					}
 				}
-				fullTarget := path.Join(base, target)
+				fullTarget := filepath.Join(base, target)
 				if util.IsDir(fullTarget) {
 					slog.Info("Target dir already exists", "path", fullTarget)
 					continue

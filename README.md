@@ -18,15 +18,39 @@ This could expand to:
 ~/src/github.com/drewstinnett/mycoolproject
 ```
 
+## Configuration
+
+The base directory defaults to `~/src`. Change it with the `SOURCESEEDY_BASE`
+environment variable, or per-command with `-b`/`--base`.
+
 ## Navigation
 
-You can use the `fzf` subcommand to load all of your projects in to an fzf list, and quickly filter, then cd to your selection using something like this in your shell:
+You can use the `fzf` subcommand to load all of your projects in to an fzf list, and quickly filter, then cd to your selection. The `init` subcommand prints a shell function, `scd`, that does the `cd` for you. Add this to your shell config:
 
 ```bash
-scd () {
-  target=$(/usr/local/bin/sourceseedy fzf "$@") && cd "$target"
-}
+# bash, zsh
+eval "$(sourceseedy init zsh)"
 ```
+
+```fish
+# fish
+sourceseedy init fish | source
+```
+
+Then `scd` opens the fzf list, and `scd myproj` starts it filtered to `myproj`.
+Backing out of fzf with Esc leaves you where you are. Use `--name` to call the
+function something other than `scd`.
+
+## Cloning Projects
+
+Clone a remote straight in to the right place:
+
+```
+$ sourceseedy clone git@github.com:drewstinnett/sourceseedy.git
+```
+
+This ends up in `~/src/github.com/drewstinnett/sourceseedy`, and that path is
+printed to stdout, so `cd "$(sourceseedy clone <url>)"` works.
 
 ## Importing Projects
 
