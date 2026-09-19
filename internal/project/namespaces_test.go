@@ -3,6 +3,7 @@ package project_test
 import (
 	"os"
 	"path"
+	"slices"
 	"testing"
 
 	"github.com/drewstinnett/sourceseedy/internal/project"
@@ -51,5 +52,48 @@ func TestListProjectsSkipsUnreadable(t *testing.T) {
 	}
 	if len(ps) != 1 || ps[0].Name != "ok" {
 		t.Errorf("expected only project ok, got %+v", ps)
+	}
+}
+
+func TestListProjectsDoesNotDescendIntoRepos(t *testing.T) {
+	dir := t.TempDir()
+	for _, item := range []string{
+		"proj/.git/modules/inner/.git",
+		"proj/vendor/nested/.git",
+		"group/sub/other/.git",
+	} {
+		if err := os.MkdirAll(path.Join(dir, item), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	ps, err := project.Namespace{Directory: dir}.ListProjects()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, p := range ps {
+		got = append(got, p.Name)
+	}
+	slices.Sort(got)
+	if want := []string{"group/sub/other", "proj"}; !slices.Equal(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestListProjectsAcceptsGitFile(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(path.Join(dir, "worktree"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path.Join(dir, "worktree", ".git"), []byte("gitdir: elsewhere\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ps, err := project.Namespace{Directory: dir}.ListProjects()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ps) != 1 || ps[0].Name != "worktree" {
+		t.Errorf("expected only project worktree, got %+v", ps)
 	}
 }

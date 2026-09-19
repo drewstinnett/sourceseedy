@@ -23,25 +23,9 @@ func TestListHosts(t *testing.T) {
 	}
 }
 
-func TestListProjects(t *testing.T) {
-	h := project.Host{
-		Name:      "fake.com",
-		Flavor:    "github",
-		Directory: path.Join(testBase, "fake.com"),
-	}
-	projects, err := h.ListProjects()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(projects) == 0 {
-		t.Error("expected projects, got none")
-	}
-}
-
 func TestListNamespaces(t *testing.T) {
 	h := project.Host{
 		Name:      "fake.com",
-		Flavor:    "github",
 		Directory: path.Join(testBase, "fake.com"),
 	}
 	nss, err := h.ListNamespaces()

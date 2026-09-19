@@ -2,11 +2,9 @@
 package git
 
 import (
-	"log/slog"
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"strings"
 )
 
@@ -22,27 +20,6 @@ func IsLocalGitRepo(rpath string) bool {
 		return true
 	}
 	return false
-}
-
-// FindGit returns the paths, relative to dir, of every git repo under dir.
-// Unreadable directories are skipped
-func FindGit(dir string) (result []string, err error) {
-	err = filepath.Walk(dir, func(path string, fi os.FileInfo, errIn error) error {
-		if errIn != nil {
-			if path == dir {
-				return errIn
-			}
-			slog.Debug("Skipping unreadable path", "path", path, "err", errIn)
-			return nil
-		}
-		if fi.Name() == ".git" {
-			item := strings.TrimSuffix(path, "/.git")
-			item = strings.TrimPrefix(item, dir)
-			result = append(result, item)
-		}
-		return nil
-	})
-	return
 }
 
 // SysGitConfig configures how SysGit and SysGitOutput run git

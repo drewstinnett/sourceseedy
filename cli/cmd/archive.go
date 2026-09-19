@@ -24,8 +24,8 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -40,29 +40,24 @@ func init() {
 		usage: "archive [directory]",
 		short: "Compress and copy a repo in to the 'archive' directory",
 		long: `Use this if you are gonna make a big scary change, and wanna make sure you have
-a copy of everything stashed in ti ${base}/archived. If no directory is specified, an fzf
+a copy of everything stashed in ${base}/archive. If no directory is specified, an fzf
 chooser will pop up`,
 		run: func(args []string) error {
 			if len(args) > 1 {
 				return errors.New("archive accepts at most 1 arg")
 			}
 			var project string
+			var err error
 			if len(args) == 0 {
-				var err error
-				project, err = finder.FzfProjects(base)
-				if err != nil {
-					return err
-				}
+				project, err = finder.StreamFzfProjects(base, "")
 			} else {
-				repo, err := filepath.Abs(args[0])
-				if err != nil {
-					return err
-				}
-				project = strings.TrimPrefix(repo, base+"/")
+				project, err = projectFromPath(base, args[0])
+			}
+			if err != nil {
+				return err
 			}
 
-			archiveFilename := path.Join(base, "archive", strings.ReplaceAll(project, "/", "-")+"-"+time.Now().Format("20060102150405")+".tar")
-			gzName := archiveFilename + ".gz"
+			gzName := filepath.Join(base, "archive", strings.ReplaceAll(project, "/", "-")+"-"+time.Now().Format("20060102150405")+".tar.gz")
 			if err := archive.CreateArchive(base, project, gzName); err != nil {
 				return err
 			}
@@ -70,4 +65,22 @@ chooser will pop up`,
 			return nil
 		},
 	})
+}
+
+// projectFromPath returns the path of dir relative to base, and errors if dir
+// is not somewhere inside base
+func projectFromPath(base, dir string) (string, error) {
+	absBase, err := filepath.Abs(base)
+	if err != nil {
+		return "", err
+	}
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return "", err
+	}
+	rel, err := filepath.Rel(absBase, absDir)
+	if err != nil || rel == "." || !filepath.IsLocal(rel) {
+		return "", fmt.Errorf("%s is not inside %s", dir, base)
+	}
+	return filepath.ToSlash(rel), nil
 }
