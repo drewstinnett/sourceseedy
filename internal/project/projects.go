@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/url"
 	"path"
+	"slices"
 	"strings"
 	"sync"
 
@@ -71,15 +72,13 @@ func DetectProperPathFromURL(remote string) (string, error) {
 	return path.Join(host, upath), nil
 }
 
-// ListAllProjectFullIDs returns the FullID of every project under base b
-func ListAllProjectFullIDs(b string) ([]string, error) {
-	var namespaces []Namespace
-
+// ListAllNamespaces returns every namespace of every host under base b
+func ListAllNamespaces(b string) ([]Namespace, error) {
 	hs, err := ListHosts(b)
 	if err != nil {
 		return nil, err
 	}
-
+	var namespaces []Namespace
 	for _, h := range hs {
 		ns, err := h.ListNamespaces()
 		if err != nil {
@@ -87,35 +86,38 @@ func ListAllProjectFullIDs(b string) ([]string, error) {
 		}
 		namespaces = append(namespaces, ns...)
 	}
+	return namespaces, nil
+}
 
-	c := make(chan []string, len(namespaces))
-	errc := make(chan error, len(namespaces))
+// ListAllProjectFullIDs returns the sorted FullID of every project under base b
+func ListAllProjectFullIDs(b string) ([]string, error) {
+	namespaces, err := ListAllNamespaces(b)
+	if err != nil {
+		return nil, err
+	}
+
+	batches := make([][]string, len(namespaces))
+	errs := make([]error, len(namespaces))
 	var wg sync.WaitGroup
-	for _, namespace := range namespaces {
+	for i, namespace := range namespaces {
 		wg.Add(1)
-		go func(namespace Namespace) {
+		go func() {
 			defer wg.Done()
 			projects, err := namespace.ListProjects()
 			if err != nil {
-				errc <- err
+				errs[i] = err
 				return
 			}
-			var batch []string
 			for _, project := range projects {
-				batch = append(batch, project.FullID())
+				batches[i] = append(batches[i], project.FullID())
 			}
-			c <- batch
-		}(namespace)
+		}()
 	}
 	wg.Wait()
-	close(c)
-	close(errc)
-	if err := <-errc; err != nil {
+	if err := errors.Join(errs...); err != nil {
 		return nil, err
 	}
-	var results []string
-	for item := range c {
-		results = append(results, item...)
-	}
+	results := slices.Concat(batches...)
+	slices.Sort(results)
 	return results, nil
 }

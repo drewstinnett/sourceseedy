@@ -24,18 +24,24 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/drewstinnett/sourceseedy/internal/finder"
 )
 
 var (
 	base    = "~/src"
 	verbose bool
+	// Set at build time with -ldflags -X
 	version = "dev"
+	commit  = "none"
+	date    = "unknown"
 )
 
 const longDescription = `Quickly move around your various source directories, assuming a standard
@@ -64,6 +70,11 @@ var commands []*command
 // This is called by main.main().
 func Execute() {
 	if err := run(os.Args[1:]); err != nil {
+		// Cancelling fzf isn't an error worth reporting, but callers like
+		// scd need the non-zero exit to know not to cd
+		if errors.Is(err, finder.ErrNoSelection) {
+			os.Exit(1)
+		}
 		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(1)
 	}
@@ -77,7 +88,7 @@ func run(args []string) error {
 	_ = root.Parse(args)
 
 	if *showVersion {
-		fmt.Println("sourceseedy version", version)
+		fmt.Printf("sourceseedy version %s (commit %s, built %s)\n", version, commit, date)
 		return nil
 	}
 

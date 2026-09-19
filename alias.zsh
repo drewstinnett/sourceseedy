@@ -1,4 +1,3 @@
 scd() {
-  target=$(/usr/local/bin/sourceseedy fzf)
-  cd $target
+  target=$(/usr/local/bin/sourceseedy fzf "$@") && cd "$target"
 }

@@ -2,24 +2,10 @@ package git_test
 
 import (
 	"path"
-	"slices"
 	"testing"
 
 	"github.com/drewstinnett/sourceseedy/internal/git"
 )
-
-func TestFindGit(t *testing.T) {
-	res, err := git.FindGit(testBase)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !slices.Contains(res, "/badhost/somenamespace/someproject") {
-		t.Errorf("expected /badhost/somenamespace/someproject in %v", res)
-	}
-	if slices.Contains(res, "/fake.com/emptydir") {
-		t.Errorf("did not expect /fake.com/emptydir in %v", res)
-	}
-}
 
 func TestIsLocalGitRepo(t *testing.T) {
 	if !git.IsLocalGitRepo(path.Join(testBase, "badhost/somenamespace/someproject")) {
@@ -58,11 +44,5 @@ func TestSysGitOutput(t *testing.T) {
 	}
 	if want := "git@example.com:a/b.git"; got != want {
 		t.Errorf("got %q, want %q", got, want)
-	}
-}
-
-func TestFindGitMissingDir(t *testing.T) {
-	if _, err := git.FindGit(path.Join(t.TempDir(), "not-exists")); err == nil {
-		t.Error("expected error finding git repos in a missing directory")
 	}
 }

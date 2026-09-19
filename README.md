@@ -24,8 +24,7 @@ You can use the `fzf` subcommand to load all of your projects in to an fzf list,
 
 ```bash
 scd () {
-  target=$(/usr/local/bin/sourceseedy fzf $1)
-  cd $target
+  target=$(/usr/local/bin/sourceseedy fzf "$@") && cd "$target"
 }
 ```
 

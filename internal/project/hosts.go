@@ -2,44 +2,15 @@
 package project
 
 import (
-	"log/slog"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 )
 
 // Host is a remote git host directory, such as ${base}/github.com
 type Host struct {
-	Name string
-	// Github, Gitlab, etc
-	Flavor    string
+	Name      string
 	Directory string
-}
-
-// ListProjects returns the paths, relative to the host directory, of every
-// git repo under the host. Unreadable directories are skipped
-func (h Host) ListProjects() ([]string, error) {
-	var result []string
-	err := filepath.Walk(h.Directory, func(path string, fi os.FileInfo, errIn error) error {
-		if errIn != nil {
-			if path == h.Directory {
-				return errIn
-			}
-			slog.Debug("Skipping unreadable path", "path", path, "err", errIn)
-			return nil
-		}
-		if fi.Name() == ".git" {
-			item := strings.TrimSuffix(path, "/.git")
-			item = strings.TrimPrefix(item, h.Directory)
-			result = append(result, item)
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
 }
 
 // ListHosts returns the host directories in dir. Only non-hidden entries with

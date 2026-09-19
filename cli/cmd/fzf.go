@@ -17,8 +17,7 @@ func init() {
 like this in your .zshrc for easier usage:
 
 scd() {
-  target=$(/usr/local/bin/sourceseedy fzf)
-  cd $target
+  target=$(/usr/local/bin/sourceseedy fzf "$@") && cd "$target"
 }
 
 If given a filter arg, the fzf command will pass that in as an initial string to
