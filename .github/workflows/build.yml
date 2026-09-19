@@ -42,7 +42,7 @@ jobs:
       -
         name: Lint the installer
         if: ${{ runner.os == 'Linux' }}
-        run: shellcheck install.sh .github/scripts/install_test.sh
+        run: make lint-sh
 
   goreleaser:
     needs: test
