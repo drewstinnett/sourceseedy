@@ -19,6 +19,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
+
+// Package cmd implements the sourceseedy subcommands
 package cmd
 
 import (
@@ -32,8 +34,8 @@ import (
 
 var (
 	base    = "~/src"
-	Verbose bool
-	version string = "dev"
+	verbose bool
+	version = "dev"
 )
 
 const longDescription = `Quickly move around your various source directories, assuming a standard
@@ -100,7 +102,7 @@ func run(args []string) error {
 	_ = fs.Parse(args[1:])
 
 	level := slog.LevelInfo
-	if Verbose {
+	if verbose {
 		level = slog.LevelDebug
 	}
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})))
@@ -119,7 +121,7 @@ func globalFlags(fs *flag.FlagSet) {
 		fs.StringVar(&base, name, base, "Base directory containing sources")
 	}
 	for _, name := range []string{"verbose", "v"} {
-		fs.BoolVar(&Verbose, name, Verbose, "Enable verbose logging")
+		fs.BoolVar(&verbose, name, verbose, "Enable verbose logging")
 	}
 }
 

@@ -41,7 +41,11 @@ import and move it over. Use the git remote URL to decide where it should go`,
 					if err != nil {
 						return err
 					}
-					defer os.RemoveAll(dir)
+					defer func() {
+						if err := os.RemoveAll(dir); err != nil {
+							slog.Warn("Could not clean up temp dir", "dir", dir, "err", err)
+						}
+					}()
 					if err := exec.Command("git", "clone", item, dir).Run(); err != nil {
 						return err
 					}

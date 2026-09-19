@@ -1,3 +1,4 @@
+// Package finder selects projects interactively using fzf
 package finder
 
 import (
@@ -13,6 +14,7 @@ import (
 	"github.com/drewstinnett/sourceseedy/internal/project"
 )
 
+// Fzf pipes data in to fzf and returns the selected line
 func Fzf(data io.Reader) (string, error) {
 	var result strings.Builder
 	cmd := exec.Command("fzf")
@@ -44,6 +46,7 @@ func Fzf(data io.Reader) (string, error) {
 	return strings.TrimSpace(result.String()), nil
 }
 
+// FzfProjects lists all projects under base and returns the one selected in fzf
 func FzfProjects(base string) (string, error) {
 	projects, err := project.ListAllProjectFullIDs(base)
 	if err != nil {
@@ -73,12 +76,14 @@ func fzfWithFilter(command string, input func(in io.WriteCloser)) string {
 	in, _ := cmd.StdinPipe()
 	go func() {
 		input(in)
-		in.Close()
+		_ = in.Close()
 	}()
 	result, _ := cmd.Output()
 	return string(result)
 }
 
+// StreamFzfProjects streams projects under base in to fzf as they are found,
+// optionally pre-filtered with filter, and returns the selection
 func StreamFzfProjects(base, filter string) (string, error) {
 	var namespaces []project.Namespace
 	hs, err := project.ListHosts(base)

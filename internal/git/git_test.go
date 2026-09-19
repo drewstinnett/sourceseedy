@@ -60,3 +60,9 @@ func TestSysGitOutput(t *testing.T) {
 		t.Errorf("got %q, want %q", got, want)
 	}
 }
+
+func TestFindGitMissingDir(t *testing.T) {
+	if _, err := git.FindGit(path.Join(t.TempDir(), "not-exists")); err == nil {
+		t.Error("expected error finding git repos in a missing directory")
+	}
+}

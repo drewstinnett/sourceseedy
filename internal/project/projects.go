@@ -12,6 +12,7 @@ import (
 	"github.com/drewstinnett/sourceseedy/internal/git"
 )
 
+// Project is a single git repo within a Namespace
 type Project struct {
 	Name      string
 	Host      string
@@ -19,10 +20,13 @@ type Project struct {
 	Directory string
 }
 
+// FullID returns the project as host/namespace/name
 func (p Project) FullID() string {
 	return fmt.Sprintf("%v/%v/%v", p.Host, p.Namespace, p.Name)
 }
 
+// DetectProperPath returns the host/namespace/repo path a local git repo
+// belongs at, based on its origin remote
 func DetectProperPath(fpath string) (string, error) {
 	out, err := git.SysGitOutput(&git.SysGitConfig{Directory: fpath}, "remote", "get-url", "--all", "origin")
 	if err != nil {
@@ -44,7 +48,7 @@ func DetectProperPath(fpath string) (string, error) {
 // or git@host:ns/repo.git) in to a host/namespace/repo path
 func DetectProperPathFromURL(remote string) (string, error) {
 	if !strings.Contains(remote, "/") {
-		return "", errors.New("Missing / in URL")
+		return "", errors.New("missing / in URL")
 	}
 	var host, upath string
 	switch {
@@ -67,6 +71,7 @@ func DetectProperPathFromURL(remote string) (string, error) {
 	return path.Join(host, upath), nil
 }
 
+// ListAllProjectFullIDs returns the FullID of every project under base b
 func ListAllProjectFullIDs(b string) ([]string, error) {
 	var namespaces []Namespace
 

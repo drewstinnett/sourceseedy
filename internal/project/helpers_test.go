@@ -40,5 +40,5 @@ func setUp() {
 }
 
 func tearDown() {
-	os.RemoveAll(testBase)
+	_ = os.RemoveAll(testBase)
 }
