@@ -34,6 +34,15 @@ jobs:
       -
         name: Tests
         run: go test -race -v ./...
+      -
+        # Serves a fake releases page from python3, and installs from it
+        name: Test the installer
+        if: ${{ runner.os != 'Windows' }}
+        run: .github/scripts/install_test.sh
+      -
+        name: Lint the installer
+        if: ${{ runner.os == 'Linux' }}
+        run: shellcheck install.sh .github/scripts/install_test.sh
 
   goreleaser:
     needs: test

@@ -18,6 +18,50 @@ This could expand to:
 ~/src/github.com/drewstinnett/mycoolproject
 ```
 
+## Installation
+
+On macOS or Linux:
+
+```
+curl -fsSL https://raw.githubusercontent.com/drewstinnett/sourceseedy/main/install.sh | sh
+```
+
+This downloads the latest release for your machine, checks it against the
+checksums published with the release, and puts `sourceseedy` in `~/.local/bin`.
+Two environment variables, set on the `sh` side of the pipe, change that:
+
+```
+curl -fsSL https://raw.githubusercontent.com/drewstinnett/sourceseedy/main/install.sh | SOURCESEEDY_INSTALL_DIR=/usr/local/bin SOURCESEEDY_VERSION=v0.3.0 sh
+```
+
+`SOURCESEEDY_INSTALL_DIR` is where the binary goes, and `SOURCESEEDY_VERSION` is
+the release to install instead of the latest. Read the script first if you would
+like to, it is [`install.sh`](install.sh).
+
+Every release is also on the [releases
+page](https://github.com/drewstinnett/sourceseedy/releases), as a `.tar.gz` for
+macOS and Linux and a `.zip` for Windows (see [Windows](#windows)), and you can
+build it with `go install github.com/drewstinnett/sourceseedy/cli@latest`.
+
+## Updating
+
+Now and then, at most every 6 hours, sourceseedy checks GitHub for a newer
+release, in the background so it doesn't slow anything down. If there is one, it
+tells you on stderr, once per check, and only when that is a terminal:
+
+```
+• Update   v0.4.0 is available, you have v0.3.0. Run: sourceseedy upgrade
+```
+
+`sourceseedy upgrade` downloads the latest release, checks it against the
+release's checksums, and replaces the running binary. It needs to be able to
+write to the directory sourceseedy is installed in, which is why the installer
+defaults to `~/.local/bin`. Add `-d` to only see what the latest release is.
+
+Set `SOURCESEEDY_NO_UPDATE_CHECK=1` to never check. It is also skipped when `CI`
+is set, for `sourceseedy init`, and for development builds, which `upgrade`
+can't upgrade either.
+
 ## Configuration
 
 The base directory defaults to `~/src`. Change it with the `SOURCESEEDY_BASE`
@@ -52,7 +96,9 @@ Windows 10 and up works. Put `git` and [`fzf`](https://github.com/junegunn/fzf)
 on your `PATH` (`winget install fzf` or `scoop install fzf`), and add the
 PowerShell line above to your profile (`notepad $PROFILE`). The default base
 directory is `~/src`, which is `C:\Users\you\src`. Releases for Windows are
-`.zip` files.
+`.zip` files, so unzip `sourceseedy.exe` from the latest one on the [releases
+page](https://github.com/drewstinnett/sourceseedy/releases) in to a directory on
+your `PATH`. After that `sourceseedy upgrade` works the same as elsewhere.
 
 ## Cloning Projects
 
@@ -143,6 +189,7 @@ This will just create a tar.gz of the project you select, and put it in `$base/a
 The path of the archive is printed to stdout when it isn't a terminal
 
 I use this when I'm about to do something wonky in git that I'm worried will bust my copy
+
 ## Releasing
 
 Releases are automatic. Pull requests are squash-merged, so the PR title becomes

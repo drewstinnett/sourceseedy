@@ -63,6 +63,9 @@ type command struct {
 	long  string
 	flags func(fs *flag.FlagSet)
 	run   func(args []string) error
+	// noUpdateCheck leaves out the check for a new release. init needs it, since
+	// it runs whenever a shell starts, and upgrade looks for itself
+	noUpdateCheck bool
 }
 
 var commands []*command
@@ -134,7 +137,11 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	return cmd.run(positional)
+
+	finish := startUpdateCheck(cmd)
+	err = cmd.run(positional)
+	finish()
+	return err
 }
 
 // parseFlags parses args in to fs, and returns what is left over. Unlike
