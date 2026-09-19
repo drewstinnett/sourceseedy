@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"os/exec"
 	"path"
 	"slices"
 	"strings"
@@ -31,18 +32,27 @@ func (p Project) FullID() string {
 func DetectProperPath(fpath string) (string, error) {
 	out, err := git.SysGitOutput(&git.SysGitConfig{Directory: fpath}, "remote", "get-url", "--all", "origin")
 	if err != nil {
-		return "", err
+		// git exits 2 when there is no such remote
+		if exit := (*exec.ExitError)(nil); errors.As(err, &exit) && exit.ExitCode() == 2 {
+			return "", errors.New("no origin remote to place it by")
+		}
+		return "", fmt.Errorf("getting origin remote: %w", err)
 	}
 
+	var lastErr error
 	for remote := range strings.SplitSeq(out, "\n") {
 		u, err := TargetFromRemote(strings.TrimSpace(remote))
 		if err != nil {
-			slog.Error("Error detecting path", "err", err)
+			slog.Debug("Origin remote can't be placed", "err", err)
+			lastErr = err
 			continue
 		}
 		return u, nil
 	}
-	return "", errors.New("CouldNotDetecProperPath")
+	if lastErr != nil {
+		return "", lastErr
+	}
+	return "", errors.New("no origin remote to place it by")
 }
 
 // DetectProperPathFromURL converts a git remote URL (e.g. https://host/ns/repo.git

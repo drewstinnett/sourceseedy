@@ -47,10 +47,12 @@ Clone a remote straight in to the right place:
 
 ```
 $ sourceseedy clone git@github.com:drewstinnett/sourceseedy.git
+Cloning into '/Users/drew/src/github.com/drewstinnett/sourceseedy'...
+✓ Cloned   ~/src/github.com/drewstinnett/sourceseedy
 ```
 
-This ends up in `~/src/github.com/drewstinnett/sourceseedy`, and that path is
-printed to stdout, so `cd "$(sourceseedy clone <url>)"` works.
+This ends up in `~/src/github.com/drewstinnett/sourceseedy`. Cloning something
+you already have is fine, it just says `Exists`.
 
 ## Importing Projects
 
@@ -58,12 +60,31 @@ You can quickly import local or remote git repositories directly in to your stru
 
 ```
 $ sourceseedy import /tmp/local_dir
+✓ Moved    /tmp/local_dir → ~/src/github.com/drewstinnett/sourceseedy
 ```
 
 or 
 
 ```
 $ sourceseedy import https://github.com/drewstinnett/sourceseedy.git
+```
+
+Remote URLs are cloned exactly like `clone`. Repos that can't be placed (no git
+remote) or whose place is already taken are skipped with a `Skipped` line and
+left where they are. Add `-d` to see what would happen without doing it.
+
+## Output
+
+Commands tell you what happened on stderr, one line per repo. Symbols and color
+show up when it's a terminal, and are left out when it isn't or `NO_COLOR` is
+set. Use `-v` for the debug logging behind it.
+
+`clone`, `import` and `archive` also print the absolute path of the result to
+stdout, but only when stdout isn't a terminal, so you don't see it twice. That
+makes this work, including for a repo you already had:
+
+```
+cd "$(sourceseedy clone git@github.com:drewstinnett/sourceseedy.git)"
 ```
 
 ## Listing Projects
@@ -80,6 +101,7 @@ $ sourceseedy list
 $ sourcseedy archive [project]
 ```
 
-This will just create a tar.gz of the project you select, and put it in `$base/archive`
+This will just create a tar.gz of the project you select, and put it in `$base/archive`.
+The path of the archive is printed to stdout when it isn't a terminal
 
 I use this when I'm about to do somethink wonky in git that I'm worried will bust my copy

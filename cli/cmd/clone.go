@@ -3,8 +3,6 @@ package cmd
 import (
 	"errors"
 	"flag"
-	"fmt"
-	"log/slog"
 	"path/filepath"
 
 	"github.com/drewstinnett/sourceseedy/internal/git"
@@ -26,16 +24,13 @@ stdout, so this works: cd "$(sourceseedy clone git@github.com:a/b.git)"`,
 			if len(args) < 1 {
 				return errors.New("clone requires at least 1 arg")
 			}
-			if dr {
-				slog.Info("Running in dry-run mode!")
-			}
 			for _, remote := range args {
 				dest, err := cloneRemote(remote, dr)
 				if err != nil {
 					return err
 				}
 				if !dr {
-					fmt.Println(dest)
+					emitPath(dest)
 				}
 			}
 			return nil
@@ -52,8 +47,9 @@ func dryRunFlag(dr *bool) func(fs *flag.FlagSet) {
 	}
 }
 
-// cloneRemote clones remote in to its proper place under base and returns
-// that path. Nothing is cloned when dryRun is set, or the path already exists
+// cloneRemote clones remote in to its proper place under base, reports what
+// happened, and returns that path. Nothing is cloned when dryRun is set, or the
+// path already exists
 func cloneRemote(remote string, dryRun bool) (string, error) {
 	target, err := project.TargetFromRemote(remote)
 	if err != nil {
@@ -61,15 +57,16 @@ func cloneRemote(remote string, dryRun bool) (string, error) {
 	}
 	dest := filepath.Join(base, filepath.FromSlash(target))
 	if util.IsDir(dest) {
-		slog.Info("Target dir already exists", "path", dest)
+		note("Exists", tildePath(dest))
 		return dest, nil
 	}
-	slog.Info("Cloning", "repo", remote, "path", dest)
 	if dryRun {
+		preview("Would clone", tildePath(dest))
 		return dest, nil
 	}
 	if err := git.Clone(remote, dest); err != nil {
 		return "", err
 	}
+	done("Cloned", tildePath(dest))
 	return dest, nil
 }

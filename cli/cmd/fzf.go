@@ -30,7 +30,7 @@ match. Exits 1 without printing anything if nothing is selected`,
 			if err != nil {
 				return err
 			}
-			fmt.Println(path.Join(base, thing))
+			fmt.Fprintln(stdout, path.Join(base, thing))
 			return nil
 		},
 	})

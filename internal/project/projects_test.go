@@ -3,6 +3,7 @@ package project_test
 import (
 	"path"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/drewstinnett/sourceseedy/internal/git"
@@ -99,5 +100,36 @@ func TestDetectProperPath(t *testing.T) {
 		if got != test.want {
 			t.Errorf("got %q, want %q", got, test.want)
 		}
+	}
+}
+
+func TestDetectProperPathErrors(t *testing.T) {
+	fakedir := t.TempDir()
+	noRemote := path.Join(fakedir, "no-remote")
+	if err := git.SysGit(nil, "init", noRemote); err != nil {
+		t.Fatal(err)
+	}
+	unplaceable := path.Join(fakedir, "unplaceable")
+	if err := git.SysGit(nil, "init", unplaceable); err != nil {
+		t.Fatal(err)
+	}
+	if err := git.SysGit(&git.SysGitConfig{Directory: unplaceable}, "remote", "add", "origin", "/some/local/path"); err != nil {
+		t.Fatal(err)
+	}
+
+	for name, tt := range map[string]struct {
+		dir  string
+		want string
+	}{
+		"no origin":        {noRemote, "no origin remote"},
+		"unplaceable":      {unplaceable, "cannot place"},
+		"not a repository": {fakedir, "getting origin remote"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := project.DetectProperPath(tt.dir)
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Errorf("got error %v, want one containing %q", err, tt.want)
+			}
+		})
 	}
 }

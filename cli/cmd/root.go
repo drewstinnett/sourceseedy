@@ -75,7 +75,7 @@ func Execute() {
 		if errors.Is(err, finder.ErrNoSelection) {
 			os.Exit(1)
 		}
-		fmt.Fprintln(os.Stderr, "Error:", err)
+		fmt.Fprintln(stderr, "Error:", err)
 		os.Exit(1)
 	}
 }
@@ -97,7 +97,7 @@ func run(args []string) error {
 	_ = root.Parse(args)
 
 	if *showVersion {
-		fmt.Printf("sourceseedy version %s (commit %s, built %s)\n", version, commit, date)
+		fmt.Fprintf(stdout, "sourceseedy version %s (commit %s, built %s)\n", version, commit, date)
 		return nil
 	}
 
@@ -121,11 +121,12 @@ func run(args []string) error {
 	fs.Usage = func() { commandUsage(cmd, fs) }
 	_ = fs.Parse(args[1:])
 
-	level := slog.LevelInfo
+	// Status lines are how commands talk to people, slog is for diagnostics
+	level := slog.LevelWarn
 	if verbose {
 		level = slog.LevelDebug
 	}
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})))
+	slog.SetDefault(slog.New(slog.NewTextHandler(stderr, &slog.HandlerOptions{Level: level})))
 
 	var err error
 	base, err = expandHome(base)

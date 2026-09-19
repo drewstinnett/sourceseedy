@@ -48,7 +48,7 @@ Give the function an initial filter with: scd myproj`,
 			if err != nil {
 				return err
 			}
-			fmt.Print(out)
+			fmt.Fprint(stdout, out)
 			return nil
 		},
 	})
