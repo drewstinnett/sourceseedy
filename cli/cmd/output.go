@@ -37,7 +37,7 @@ func isTerminal(w io.Writer) bool {
 
 // styled reports whether status lines get symbols and color
 func styled() bool {
-	return isTerminal(stderr) && os.Getenv("NO_COLOR") == "" && os.Getenv("TERM") != "dumb"
+	return isTerminal(stderr) && os.Getenv("NO_COLOR") == "" && os.Getenv("TERM") != "dumb" && ansiSupported(stderr)
 }
 
 // statusLine formats one status line, like "✓ Cloned   ~/src/...". The symbol

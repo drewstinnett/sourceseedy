@@ -6,7 +6,8 @@ import (
 	"path"
 )
 
-// GetParentPath returns the parent directory of s
+// GetParentPath returns the parent directory of s, which is a slash separated
+// host/namespace/repo path rather than a filesystem path
 func GetParentPath(s string) string {
 	return path.Dir(s)
 }

@@ -79,6 +79,7 @@ func DetectProperPathFromURL(remote string) (string, error) {
 		upath = remote
 	}
 	upath = strings.TrimSuffix(upath, ".git")
+	// URL paths always use /, whatever the OS, so this is path not filepath
 	return path.Join(host, upath), nil
 }
 

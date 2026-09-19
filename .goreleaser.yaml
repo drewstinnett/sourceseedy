@@ -26,6 +26,10 @@ builds:
 archives:
   - formats:
       - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
     name_template: 'sourceseedy-{{ .Version }}_{{ if eq .Os "darwin" }}macOS{{ else }}{{ .Os }}{{ end }}_{{ .Arch }}'
 checksum:
   name_template: 'sourceseedy-{{ .Version }}_SHA256SUMS'
@@ -43,7 +47,7 @@ brews:
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     description: "Easily switch between source directories"
     homepage: "https://github.com/drewstinnett/sourceseedy"
-    license: BSD-2-Clause
+    license: MIT
     caveats: |
       Add the following to your shell config to get the scd command, which
       fzf's your way in to a project:

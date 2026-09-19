@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       -
@@ -33,7 +33,7 @@ jobs:
         run: go mod tidy -diff
       -
         name: Tests
-        run: go test -race ./...
+        run: go test -race -v ./...
 
   goreleaser:
     needs: test

@@ -44,7 +44,7 @@ func runFzf(args []string, feed func(w io.Writer)) (string, error) {
 		}
 		return "", fmt.Errorf("running fzf: %w", err)
 	}
-	return strings.TrimSuffix(out.String(), "\n"), nil
+	return strings.TrimRight(out.String(), "\r\n"), nil
 }
 
 // StreamFzfProjects streams projects under base in to fzf as they are found,

@@ -16,6 +16,11 @@ import (
 func capture(t *testing.T) (out, errOut *bytes.Buffer) {
 	t.Helper()
 	out, errOut = &bytes.Buffer{}, &bytes.Buffer{}
+	// Status lines shorten paths under the home directory to ~. On Windows the
+	// temp directory is under it, so give these tests a home that isn't
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
 	oldOut, oldErr := stdout, stderr
 	stdout, stderr = out, errOut
 	t.Cleanup(func() { stdout, stderr = oldOut, oldErr })
@@ -48,7 +53,11 @@ func noNoise(t *testing.T, s string) {
 }
 
 func TestTildePath(t *testing.T) {
-	t.Setenv("HOME", "/home/drew")
+	// Paths are written with slashes and made native below, so the same table
+	// covers Windows. os.UserHomeDir reads USERPROFILE there
+	home := filepath.FromSlash("/home/drew")
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
 	for in, want := range map[string]string{
 		"/home/drew":                   "~",
 		"/home/drew/src/github.com/a":  "~/src/github.com/a",
@@ -59,6 +68,7 @@ func TestTildePath(t *testing.T) {
 		"":                             "",
 		"/home/drew-not-quite/../drew": "/home/drew-not-quite/../drew",
 	} {
+		in, want := filepath.FromSlash(in), filepath.FromSlash(want)
 		if got := tildePath(in); got != want {
 			t.Errorf("tildePath(%q) = %q, want %q", in, got, want)
 		}
@@ -117,15 +127,20 @@ func TestIsTerminal(t *testing.T) {
 
 func TestEmitPathWhenPiped(t *testing.T) {
 	out, _ := capture(t)
-	emitPath("/some/where")
-	if got := out.String(); got != "/some/where\n" {
-		t.Errorf("piped stdout got %q", got)
+	abs, err := filepath.Abs(filepath.FromSlash("/some/where"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	emitPath(filepath.FromSlash("/some/where"))
+	if got := out.String(); got != abs+"\n" {
+		t.Errorf("piped stdout got %q, want %q", got, abs+"\n")
 	}
 	// Relative paths are made absolute so they still work after a cd
 	out.Reset()
-	emitPath("rel/dir")
-	if got := out.String(); !strings.HasPrefix(got, "/") || !strings.HasSuffix(got, "/rel/dir\n") {
-		t.Errorf("expected an absolute path, got %q", got)
+	emitPath(filepath.Join("rel", "dir"))
+	got := strings.TrimSuffix(out.String(), "\n")
+	if !filepath.IsAbs(got) || !strings.HasSuffix(got, string(filepath.Separator)+filepath.Join("rel", "dir")) {
+		t.Errorf("expected an absolute path, got %q", out.String())
 	}
 }
 

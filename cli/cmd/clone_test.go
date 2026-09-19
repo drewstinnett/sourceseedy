@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/drewstinnett/sourceseedy/internal/git"
@@ -23,8 +24,18 @@ func fakeRemotes(t *testing.T, repos ...string) {
 		}
 	}
 	t.Setenv("GIT_CONFIG_COUNT", "1")
-	t.Setenv("GIT_CONFIG_KEY_0", "url.file://"+dir+"/.insteadOf")
+	t.Setenv("GIT_CONFIG_KEY_0", "url."+fileURL(dir)+"/.insteadOf")
 	t.Setenv("GIT_CONFIG_VALUE_0", "https://git.example.com/")
+}
+
+// fileURL returns the file:// URL of dir. On Windows that is file:///C:/dir,
+// with a slash before the drive letter
+func fileURL(dir string) string {
+	slashed := filepath.ToSlash(dir)
+	if !strings.HasPrefix(slashed, "/") {
+		slashed = "/" + slashed
+	}
+	return "file://" + slashed
 }
 
 func TestCloneInPlace(t *testing.T) {

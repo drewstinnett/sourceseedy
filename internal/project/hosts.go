@@ -3,7 +3,7 @@ package project
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -31,7 +31,7 @@ func ListHosts(dir string) ([]Host, error) {
 		if strings.Contains(f.Name(), ".") {
 			h := Host{
 				Name:      f.Name(),
-				Directory: path.Join(dir, f.Name()),
+				Directory: filepath.Join(dir, f.Name()),
 			}
 			hosts = append(hosts, h)
 		}
@@ -53,7 +53,7 @@ func (h Host) ListNamespaces() ([]Namespace, error) {
 		n := Namespace{
 			Name:      item.Name(),
 			Host:      h.Name,
-			Directory: path.Join(h.Directory, item.Name()),
+			Directory: filepath.Join(h.Directory, item.Name()),
 		}
 		result = append(result, n)
 	}

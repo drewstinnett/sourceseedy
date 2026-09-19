@@ -3,6 +3,7 @@ package project_test
 import (
 	"os"
 	"path"
+	"runtime"
 	"slices"
 	"testing"
 
@@ -32,6 +33,9 @@ func TestListProjectsMissingDir(t *testing.T) {
 }
 
 func TestListProjectsSkipsUnreadable(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows doesn't stop reading a directory because of its mode")
+	}
 	if os.Geteuid() == 0 {
 		t.Skip("root can read directories regardless of permissions")
 	}

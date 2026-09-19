@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"strings"
 )
 
 // IsLocalGitRepo returns true if rpath contains a .git directory
 func IsLocalGitRepo(rpath string) bool {
-	gitPath := path.Join(rpath, ".git")
+	gitPath := filepath.Join(rpath, ".git")
 	fileInfo, err := os.Stat(gitPath)
 	return err == nil && fileInfo.IsDir()
 }

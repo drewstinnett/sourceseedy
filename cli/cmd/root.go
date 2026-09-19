@@ -177,7 +177,7 @@ func commandUsage(c *command, fs *flag.FlagSet) {
 
 // expandHome replaces a leading ~ in p with the current user's home directory
 func expandHome(p string) (string, error) {
-	if p != "~" && !strings.HasPrefix(p, "~/") {
+	if p != "~" && !strings.HasPrefix(p, "~/") && !strings.HasPrefix(p, "~"+string(filepath.Separator)) {
 		return p, nil
 	}
 	home, err := os.UserHomeDir()
