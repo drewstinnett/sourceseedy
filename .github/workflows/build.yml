@@ -40,6 +40,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    # Releases go one at a time, in the order they were merged. Every other run
+    # gets a group of its own, so pull requests and tags never wait on this
+    concurrency:
+      group: ${{ github.ref == 'refs/heads/main' && 'release' || format('goreleaser-{0}', github.run_id) }}
+      cancel-in-progress: false
     steps:
       -
         name: Checkout
@@ -52,20 +57,59 @@ jobs:
         with:
           go-version-file: go.mod
       -
+        name: Install svu
+        run: go install github.com/caarlos0/svu/v3@v3.4.0
+      -
+        name: Test the version script
+        run: .github/scripts/release-version_test.sh
+      -
+        # A push to main with a feat: or fix: since the last tag is a release.
+        # See .svu.yml, and README.md for what counts
+        name: Work out the version
+        id: version
+        run: .github/scripts/release-version.sh
+      -
+        # The tag has to be pushed by this job, and goreleaser has to run in it
+        # too. A tag pushed with GITHUB_TOKEN doesn't start any other workflow
+        name: Tag the release
+        id: tag
+        if: ${{ steps.version.outputs.release == 'true' }}
+        run: |
+          git tag "$VERSION"
+          git push origin "$VERSION"
+        env:
+          VERSION: ${{ steps.version.outputs.next }}
+      -
         # Builds every target and archive without publishing, so a broken
-        # release config fails here instead of on a tag
+        # release config fails here instead of on a release
         name: Build snapshot
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        if: ${{ steps.version.outputs.release != 'true' && !startsWith(github.ref, 'refs/tags/') }}
         uses: goreleaser/goreleaser-action@v7
         with:
           version: '~> v2'
           args: release --snapshot --clean --skip=publish
       -
+        # Runs for the release made above, or a tag someone pushed by hand
         name: Run GoReleaser
-        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        if: ${{ steps.version.outputs.release == 'true' || startsWith(github.ref, 'refs/tags/') }}
         uses: goreleaser/goreleaser-action@v7
         with:
           version: '~> v2'
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      -
+        # Otherwise the tag would sit there with no release, and the next run
+        # would see nothing new to release. A release that did get created is
+        # left alone, with its tag
+        name: Undo the tag if the release failed
+        if: ${{ failure() && steps.tag.outcome == 'success' }}
+        run: |
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "$VERSION has a release, leaving its tag"
+          else
+            git push --delete origin "$VERSION"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.next }}
