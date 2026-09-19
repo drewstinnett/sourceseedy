@@ -1,4 +1,5 @@
 ---
+version: 2
 builds:
   - env:
       - CGO_ENABLED=0
@@ -6,7 +7,7 @@ builds:
     mod_timestamp: '{{ .CommitTimestamp }}'
     ldflags:
       - '-s -w'
-      - -X github.com/drewstinnett/sourceseedy/cli/cmd.date={{ .CommitTimestamp }}
+      - -X github.com/drewstinnett/sourceseedy/cli/cmd.date={{ .CommitDate }}
       - -X github.com/drewstinnett/sourceseedy/cli/cmd.version={{ .Tag }}
       - -X github.com/drewstinnett/sourceseedy/cli/cmd.commit={{ .ShortCommit }}
     flags:
@@ -23,21 +24,20 @@ builds:
         goarch: '386'
     binary: 'sourceseedy'
 archives:
-  - format: tar.gz
-    name_template: 'sourceseedy-{{ .Version }}_{{ .Os }}_{{ .Arch }}'
-    replacements:
-      darwin: macOS
+  - formats:
+      - tar.gz
+    name_template: 'sourceseedy-{{ .Version }}_{{ if eq .Os "darwin" }}macOS{{ else }}{{ .Os }}{{ end }}_{{ .Arch }}'
 checksum:
   name_template: 'sourceseedy-{{ .Version }}_SHA256SUMS'
   algorithm: sha256
 snapshot:
-  name_template: "{{ .Tag }}-snapshot"
+  version_template: "{{ .Tag }}-snapshot"
 changelog:
-  skip: true
+  disable: true
 
 brews:
   - name: 'sourceseedy'
-    tap:
+    repository:
       owner: drewstinnett
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
