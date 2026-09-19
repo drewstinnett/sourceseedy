@@ -36,21 +36,20 @@ checksum:
   algorithm: sha256
 snapshot:
   version_template: "{{ .Tag }}-snapshot"
+# Release notes are built from the commits since the last tag, and this repo
+# uses conventional commits. Merges and build/CI changes are left out
 changelog:
-  disable: true
-
-brews:
-  - name: 'sourceseedy'
-    repository:
-      owner: drewstinnett
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    description: "Easily switch between source directories"
-    homepage: "https://github.com/drewstinnett/sourceseedy"
-    license: MIT
-    caveats: |
-      Add the following to your shell config to get the scd command, which
-      fzf's your way in to a project:
-
-        bash, zsh: eval "$(sourceseedy init zsh)"
-        fish:      sourceseedy init fish | source
+  sort: asc
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: Fixes
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Everything else
+      order: 2
+  filters:
+    exclude:
+      - '^Merge '
+      - '^(ci|build)(\([[:word:]]+\))??!?:'
