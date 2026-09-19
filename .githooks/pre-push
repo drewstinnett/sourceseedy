@@ -1,0 +1,4 @@
+#!/bin/sh
+# Don't push shell scripts that CI's shellcheck would reject. Turn this on with
+# `make hooks`
+exec make lint-sh

@@ -10,7 +10,7 @@ work=$(mktemp -d)
 failed=0
 server_pid=
 
-# shellcheck disable=SC2329 # run by the trap below
+# shellcheck disable=SC2317,SC2329 # run by the trap below. Older shellcheck calls this SC2317, newer SC2329
 cleanup() {
   if [ -n "$server_pid" ]; then
     kill "$server_pid" 2>/dev/null || true
