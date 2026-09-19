@@ -58,6 +58,8 @@ For PowerShell, put that line in your profile (run: notepad $PROFILE). pwsh is
 accepted as a name for powershell.
 
 Give the function an initial filter with: scd myproj`,
+		// This runs every time a shell starts
+		noUpdateCheck: true,
 		flags: func(fs *flag.FlagSet) {
 			fs.StringVar(&name, "name", "scd", "Name of the shell function to define")
 		},
