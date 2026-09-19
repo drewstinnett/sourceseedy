@@ -23,23 +23,60 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"errors"
+	"flag"
 	"fmt"
+	"path/filepath"
 
 	"github.com/drewstinnett/sourceseedy/internal/project"
 )
 
+// listEntry is one project in list --json
+type listEntry struct {
+	ID        string `json:"id"`
+	Host      string `json:"host"`
+	Namespace string `json:"namespace"`
+	Name      string `json:"name"`
+	Path      string `json:"path"`
+}
+
 func init() {
+	var asJSON, fullPath bool
 	commands = append(commands, &command{
 		name:  "list",
-		usage: "list",
+		usage: "list [flags]",
 		short: "List projects in your source directory",
-		run: func(_ []string) error {
-			items, err := project.ListAllProjectFullIDs(base)
+		long: `List every project, one per line, as ${remote-host}/${namespace}/${repo}. Use
+--full-path to get absolute directories instead, or --json for scripts`,
+		flags: func(fs *flag.FlagSet) {
+			fs.BoolVar(&fullPath, "full-path", false, "Print the absolute path of each project")
+			fs.BoolVar(&asJSON, "json", false, "Print a JSON array of projects, with id, host, namespace, name and path")
+		},
+		run: func(args []string) error {
+			if len(args) > 0 {
+				return errors.New("list accepts no args")
+			}
+			projects, err := project.ListAllProjects(base)
 			if err != nil {
 				return err
 			}
-			for _, item := range items {
-				fmt.Fprintln(stdout, item)
+			entries := make([]listEntry, len(projects))
+			for i, p := range projects {
+				abs, err := filepath.Abs(p.Directory)
+				if err != nil {
+					return err
+				}
+				entries[i] = listEntry{ID: p.FullID(), Host: p.Host, Namespace: p.Namespace, Name: p.Name, Path: abs}
+			}
+			if asJSON {
+				return writeJSON(entries)
+			}
+			for _, e := range entries {
+				if fullPath {
+					fmt.Fprintln(stdout, e.Path)
+				} else {
+					fmt.Fprintln(stdout, e.ID)
+				}
 			}
 			return nil
 		},

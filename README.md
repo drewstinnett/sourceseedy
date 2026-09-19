@@ -102,11 +102,36 @@ cd "$(sourceseedy clone git@github.com:drewstinnett/sourceseedy.git)"
 
 ## Listing Projects
 
-Probably not super useful, but you can just list them all to stdout with
+Probably not super useful interactively, but good for scripts. List them all to stdout with
 
 ```
 $ sourceseedy list
 ```
+
+Add `--full-path` for absolute directories, or `--json` for an array of
+`{id, host, namespace, name, path}`:
+
+```
+$ sourceseedy list --json | jq -r '.[] | select(.host == "github.com") | .path'
+```
+
+## Project Status
+
+Which of your projects have work that isn't safe yet?
+
+```
+$ sourceseedy status
+git.example.com/a/api       main     1 changed, 2 untracked, ahead 1
+git.example.com/a/tools     feature  no upstream
+git.example.com/a/website   (detached)  detached
+```
+
+It runs `git status` in every project, several at once, and only shows the ones
+that need attention: uncommitted or untracked files, unpushed commits, a branch
+with no upstream or one that's been deleted, a detached HEAD, or a repo with no
+commits. Pass `--all` to include clean ones too, or `--json` for scripts.
+
+This doesn't fetch, so "behind" is as of your last fetch.
 
 ## Archiving Projects
 

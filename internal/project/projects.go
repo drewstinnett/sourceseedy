@@ -100,26 +100,19 @@ func ListAllNamespaces(b string) ([]Namespace, error) {
 	return namespaces, nil
 }
 
-// ListAllProjectFullIDs returns the sorted FullID of every project under base b
-func ListAllProjectFullIDs(b string) ([]string, error) {
+// ListAllProjects returns every project under base b, sorted by FullID
+func ListAllProjects(b string) ([]Project, error) {
 	namespaces, err := ListAllNamespaces(b)
 	if err != nil {
 		return nil, err
 	}
 
-	batches := make([][]string, len(namespaces))
+	batches := make([][]Project, len(namespaces))
 	errs := make([]error, len(namespaces))
 	var wg sync.WaitGroup
 	for i, namespace := range namespaces {
 		wg.Go(func() {
-			projects, err := namespace.ListProjects()
-			if err != nil {
-				errs[i] = err
-				return
-			}
-			for _, project := range projects {
-				batches[i] = append(batches[i], project.FullID())
-			}
+			batches[i], errs[i] = namespace.ListProjects()
 		})
 	}
 	wg.Wait()
@@ -127,6 +120,21 @@ func ListAllProjectFullIDs(b string) ([]string, error) {
 		return nil, err
 	}
 	results := slices.Concat(batches...)
-	slices.Sort(results)
+	slices.SortFunc(results, func(a, b Project) int {
+		return strings.Compare(a.FullID(), b.FullID())
+	})
 	return results, nil
+}
+
+// ListAllProjectFullIDs returns the sorted FullID of every project under base b
+func ListAllProjectFullIDs(b string) ([]string, error) {
+	projects, err := ListAllProjects(b)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, len(projects))
+	for i, p := range projects {
+		ids[i] = p.FullID()
+	}
+	return ids, nil
 }
