@@ -5,21 +5,12 @@ import (
 	"flag"
 	"fmt"
 	"path/filepath"
-	"runtime"
 	"strings"
-	"sync"
 	"text/tabwriter"
 
 	"github.com/drewstinnett/sourceseedy/internal/git"
 	"github.com/drewstinnett/sourceseedy/internal/project"
 )
-
-// statusWorkers is how many repos are checked at once. Each check runs git, so
-// this follows the number of CPUs, but stays within limits so that a big tree
-// can't start hundreds of processes together, or crawl on a small machine
-func statusWorkers() int {
-	return min(max(runtime.NumCPU(), 4), 16)
-}
 
 // statusReport is one project in status output, and status --json
 type statusReport struct {
@@ -110,17 +101,7 @@ func countClean(reports []statusReport) int {
 // collectStatus checks every project, a few at a time, and returns the results
 // in the same order as projects
 func collectStatus(projects []project.Project) ([]statusReport, error) {
-	reports := make([]statusReport, len(projects))
-	sem := make(chan struct{}, statusWorkers())
-	var wg sync.WaitGroup
-	for i, p := range projects {
-		sem <- struct{}{}
-		wg.Go(func() {
-			defer func() { <-sem }()
-			reports[i] = checkProject(p)
-		})
-	}
-	wg.Wait()
+	reports := eachProject(projects, checkProject)
 	for i, p := range projects {
 		abs, err := filepath.Abs(p.Directory)
 		if err != nil {
